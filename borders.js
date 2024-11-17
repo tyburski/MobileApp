@@ -7,16 +7,6 @@ let borders = [
     {"id":6, "name":"Jędrzychowice", "country1": "PL", "country2": "D", "latitude": 50.083386, "longitude": 19.979451 },
 ]
 
-
-
-
-
-
-
-
-
-
-
 export function ConvertToGeolib()
 {
     const convertedList = [];
@@ -28,26 +18,30 @@ export function ConvertToGeolib()
     return convertedList;
 }
 
-export function GetByCoords(lat , lng, param)
+export function GetBorderName(lat,lng){
+    const found = borders.find((element) => element.latitude === lat && element.longitude === lng );
+    if(found!=null)
+    {
+        return found.name;
+    }
+    else return "";
+}
+
+export function GetCountryCode(lat , lng, param)
 {
     const found = borders.find((element) => element.latitude === lat && element.longitude === lng );
     const p = param;
     if(found != null)
     {
-        if(p === "name")
-        {
-            return found.name;
-        }
-        else if(p === found.country1)
+        if(p === found.country1)
         {
             return found.country2;
         }
         else if(p === found.country2)
         {
-                return found.country1;
-        }
-        else return "X";
-        
+            return found.country1;
+        } 
+        return "";    
     }
-    else return "X";
+    else return "";
 }
