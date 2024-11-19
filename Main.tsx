@@ -156,6 +156,10 @@ function Main() {
       setStartStopButtonTitle('Zakończ');
       setStartStopButtonColor('#FF0000');
       setStarted(true);
+
+      /* DO API
+        
+      */
     } else {
       const date = new Date(Date.now()).toLocaleString();
       const newEvent = {action: 'Zakończenie trasy', place: '', date: date};
