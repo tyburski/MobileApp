@@ -1,7 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {jwtDecode} from 'jwt-decode';
+import Login from './LoginPage.tsx';
+import Main from './MainPage.tsx';
 
-export async function ValidateToken() {
+export async function ValidateUser() {
   const token = await AsyncStorage.getItem('token');
   const userId = await AsyncStorage.getItem('userId');
   if (token !== null && token !== '' && userId !== null && userId !== '') {
@@ -10,8 +12,14 @@ export async function ValidateToken() {
     if (decoded.exp && decoded?.exp < currentTime) {
       await AsyncStorage.setItem('token', '');
       await AsyncStorage.setItem('userId', '');
-      return false;
-    } else return true;
+      return <Login />;
+    } else return <Main />;
   }
-  return false;
+  return <Login />;
+}
+
+export async function Logout() {
+  await AsyncStorage.setItem('token', '');
+  await AsyncStorage.setItem('userId', '');
+  return <Login />;
 }
