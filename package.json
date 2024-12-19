@@ -10,17 +10,25 @@
     "test": "jest"
   },
   "dependencies": {
+    "@expo-google-fonts/roboto": "^0.2.3",
     "@react-native-async-storage/async-storage": "^2.1.0",
     "@react-native-community/geolocation": "^3.4.0",
+    "@react-native-picker/picker": "^2.10.2",
+    "@react-navigation/stack": "^7.1.0",
     "@rn-bridge/react-native-geofencing": "^1.0.1",
+    "expo-font": "^13.0.1",
     "geolib": "^3.3.4",
     "jwt-decode": "^4.0.0",
     "react": "18.3.1",
     "react-native": "0.76.0",
     "react-native-device-info": "^14.0.0",
+    "react-native-gesture-handler": "^2.21.2",
     "react-native-permissions": "^5.0.2",
-    "react-native-screens": "^3.35.0",
-    "react-native-sound": "^0.11.2"
+    "react-native-reanimated": "^3.16.5",
+    "react-native-safe-area-context": "^5.0.0",
+    "react-native-screens": "^4.3.0",
+    "react-native-sound": "^0.11.2",
+    "react-native-vector-icons": "^10.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

@@ -1,52 +1,158 @@
-import React from 'react';
-import {View, TextInput, StyleSheet, Button} from 'react-native';
-import {login} from './ApiController.tsx';
-import {useState} from 'react';
-import Main from './MainPage.tsx';
-import {Alert} from 'react-native';
+import React, {useState} from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  StyleSheet,
+  Image,
+} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
+import {login} from './ApiController';
+import {RootStackParamList} from './types';
+import {StackNavigationProp} from '@react-navigation/stack';
 
-function Login() {
-  const [username, setUsername] = useState('');
+export default function Login() {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loginResult, setLoginResult] = useState(false);
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
-  const handleLoginClick = () => {
-    const log = login(username, password);
-    log.then(res => {
-      if (res) {
-        setLoginResult(res);
-      }
-    });
-    if (loginResult === true) {
-      return <Main />;
+  const handleLoginClick = async () => {
+    const success = await login(email, password);
+    if (success) {
+      navigation.replace('Menu');
     } else {
-      Alert.alert('Nieprawidłowe dane logowania');
+      Alert.alert('Błąd logowania', 'Nieprawidłowy login lub hasło.');
     }
   };
 
   return (
-    <View>
-      <TextInput
-        style={styles.input}
-        onChangeText={setUsername}
-        placeholder="username"
-      />
-      <TextInput
-        style={styles.input}
-        onChangeText={setPassword}
-        placeholder="pssword"
-      />
-      <Button title="login" onPress={handleLoginClick} />
+    <View style={styles.container}>
+      <View style={styles.logoSection}>
+        <Image
+          source={require('./assets/logo.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+      </View>
+
+      <View style={styles.inputSection}>
+        <View style={styles.inputWrapper}>
+          <Text style={styles.iconText}>👤</Text>
+          <TextInput
+            style={styles.input}
+            onChangeText={setEmail}
+            placeholder="Email"
+            placeholderTextColor="#B0B0B0"
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+        </View>
+
+        <View style={styles.inputWrapper}>
+          <Text style={styles.iconText}>🔑</Text>
+          <TextInput
+            style={styles.input}
+            onChangeText={setPassword}
+            placeholder="Hasło"
+            placeholderTextColor="#B0B0B0"
+            secureTextEntry
+          />
+        </View>
+
+        <TouchableOpacity style={styles.button} onPress={handleLoginClick}>
+          <Text style={styles.buttonText}>ZALOGUJ</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.registerSection}>
+        <Text style={styles.registerText}>Nie masz jeszcze konta?</Text>
+        <TouchableOpacity
+          style={styles.buttonAlt}
+          onPress={() => console.log('Register clicked')}>
+          <Text style={styles.buttonText}>REJESTRACJA</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  input: {
-    height: 40,
-    margin: 12,
+  container: {
+    height: '100%',
+    backgroundColor: '#0D1117',
+    padding: 20,
+  },
+  logoSection: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logo: {
+    width: '60%',
+    height: '60%',
+  },
+  inputSection: {
+    flex: 2,
+    justifyContent: 'center',
+    width: '100%',
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#161B22',
+    borderColor: '#30363D',
     borderWidth: 1,
-    padding: 10,
+    borderRadius: 5,
+    marginBottom: 15,
+    width: '100%',
+  },
+  iconText: {
+    color: '#C9D1D9',
+    fontSize: 30,
+    fontFamily: 'RobotoCondensed-Regular',
+    marginHorizontal: 10,
+  },
+  input: {
+    height: 55,
+    color: '#C9D1D9',
+    fontSize: 25,
+    fontFamily: 'RobotoCondensed-Regular',
+  },
+  button: {
+    width: '100%',
+    height: 55,
+    marginTop: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#238636',
+    borderRadius: 5,
+  },
+  buttonAlt: {
+    width: '100%',
+    height: 55,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#243642',
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 25,
+    fontFamily: 'RobotoCondensed-Black',
+  },
+  registerSection: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginTop: 25,
+  },
+  registerText: {
+    color: '#C9D1D9',
+    fontSize: 20,
+    fontFamily: 'RobotoCondensed-Regular',
+    marginBottom: 10,
   },
 });
-export default Login;

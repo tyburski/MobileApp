@@ -1,22 +1,29 @@
-import React from 'react';
 import {
   SafeAreaView,
   Text,
   View,
   FlatList,
   Image,
-  Button,
   StyleSheet,
   Pressable,
 } from 'react-native';
 import {useState} from 'react';
 import {useEffect} from 'react';
 import Geolocation from '@react-native-community/geolocation';
+import Geofencing from '@rn-bridge/react-native-geofencing';
 import {ConvertToGeolib, GetBorderName, GetCountryCode} from './borders';
 import * as geolib from 'geolib';
 import Sound from 'react-native-sound';
+import * as apiController from './ApiController.tsx';
+import {routeEvent} from './Interfaces.tsx';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {Logout} from './Dispatcher.tsx';
+import {useNavigation} from '@react-navigation/native';
+import {RootStackParamList} from './types';
+import {NavigationProp} from '@react-navigation/native';
 
-function Main() {
+export default function Main() {
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [currentCoords, setCurrentCoords] = useState({lat: 0, lng: 0});
   const [enterToBorderZoneCoords, setEnterToBorderZoneCoords] = useState({
     lat: 0,
@@ -32,12 +39,20 @@ function Main() {
   });
   const [crossingBorder, setCrossingBorder] = useState(false);
   const [currentCountryCode, setCurrentCountryCode] = useState<string | null>();
-  const [list, setList] = useState([{action: '', place: '', date: ''}]);
   const [startStopButtonTitle, setStartStopButtonTitle] = useState<string>('');
-  const [startStopButtonColor, setStartStopButtonColor] = useState<string>(' ');
+  const [startStopButtonColor, setStartStopButtonColor] = useState<string>('');
   const [started, setStarted] = useState(false);
   const borders = ConvertToGeolib();
+  const [route, setRoute] = useState<routeEvent[]>([]);
 
+  const getRoute = async () => {
+    const route = await apiController.GetRoute();
+    setRoute(route);
+  };
+
+  useEffect(() => {
+    getRoute;
+  }, []);
   useEffect(() => {
     if (started === true) {
       setStartStopButtonTitle('Zakończ');
@@ -100,7 +115,7 @@ function Main() {
     }, 100);
   });
 
-  const CrossingBorder = () => {
+  const CrossingBorder = async () => {
     const distance = geolib.getPreciseDistance(
       {
         latitude: exitFromBorderZoneCoords.lat,
@@ -126,11 +141,22 @@ function Main() {
         crossedBorderCoords.lat,
         crossedBorderCoords.lng,
       );
-      const date = new Date(Date.now()).toLocaleString();
 
-      const newCrossing = {action: border, place: borderName, date: date};
-      list.push(newCrossing);
-      setList(list);
+      const routeId = await AsyncStorage.getItem('routeId');
+      if (routeId !== null) {
+        const id = parseInt(routeId);
+        const newEvent: routeEvent = {
+          id: null,
+          routeId: id,
+          place: borderName,
+          eventName: border,
+          date: Date.now(),
+          lat: currentCoords.lat,
+          lng: currentCoords.lng,
+        };
+        await apiController.NewEvent(id, newEvent);
+        getRoute;
+      }
 
       Sound.setCategory('Playback');
       var sound = new Sound('beep.mp3', Sound.MAIN_BUNDLE, error => {
@@ -144,29 +170,46 @@ function Main() {
     }
   };
 
-  const handleClickStartStopButton = () => {
+  const handleClickStartStopButton = async () => {
+    const geo = await Geofencing.getCurrentLocation();
     if (!started) {
-      setList([{action: '', place: '', date: ''}]);
-
-      const date = new Date(Date.now()).toLocaleString();
-      const newEvent = {action: 'Rozpoczęcie trasy', place: '', date: date};
-      list.push(newEvent);
-      setList(list);
-      setCurrentCountryCode('PL');
-      setStartStopButtonTitle('Zakończ');
-      setStartStopButtonColor('#FF0000');
-      setStarted(true);
-
-      /* DO API
-        
-      */
+      const routeId = await apiController.NewRoute();
+      if (routeId !== null) {
+        const newEvent: routeEvent = {
+          id: null,
+          routeId: routeId,
+          place: geo.city,
+          eventName: 'Beginning',
+          date: Date.now(),
+          lat: currentCoords.lat,
+          lng: currentCoords.lng,
+        };
+        await apiController.NewEvent(routeId, newEvent);
+        getRoute;
+        await AsyncStorage.setItem('routeId', routeId);
+        setCurrentCountryCode(geo.isoCountryCode);
+        setStartStopButtonTitle('Finish');
+        setStartStopButtonColor('#FF0000');
+        setStarted(true);
+      }
     } else {
-      const date = new Date(Date.now()).toLocaleString();
-      const newEvent = {action: 'Zakończenie trasy', place: '', date: date};
-      list.push(newEvent);
-      setCurrentCountryCode('PL');
-      setList(list);
-      setStartStopButtonTitle('Rozpocznij');
+      const routeId = await AsyncStorage.getItem('routeId');
+      if (routeId !== null) {
+        const id = parseInt(routeId);
+        const newEvent: routeEvent = {
+          id: null,
+          routeId: id,
+          place: geo.city,
+          eventName: 'Finished',
+          date: Date.now(),
+          lat: currentCoords.lat,
+          lng: currentCoords.lng,
+        };
+        await apiController.NewEvent(id, newEvent);
+        await apiController.FinishRoute(id);
+      }
+      setCurrentCountryCode(geo.isoCountryCode);
+      setStartStopButtonTitle('Start');
       setStartStopButtonColor('#97BE5A');
       setStarted(false);
     }
@@ -203,55 +246,10 @@ function Main() {
           style={{
             width: '100%',
           }}
-          data={list
-            .filter(r => Object.values(r).some(c => c !== ''))
-            .reverse()}
+          data={route}
           renderItem={({item}) => (
             <View style={{flexDirection: 'row', marginBottom: 10}}>
-              <View style={{flex: 0.5, marginRight: 10}}>
-                {(() => {
-                  if (item.action === 'Rozpoczęcie trasy') {
-                    return (
-                      <Image
-                        source={require('./assets/icons/cornerStart.png')}
-                        style={{
-                          resizeMode: 'cover',
-                          height: 'auto',
-                          width: 'auto',
-                          flex: 1,
-                          opacity: 1,
-                        }}
-                      />
-                    );
-                  } else if (item.action === 'Zakończenie trasy') {
-                    return (
-                      <Image
-                        source={require('./assets/icons/cornerFinish.png')}
-                        style={{
-                          resizeMode: 'cover',
-                          height: '100%',
-                          width: 'auto',
-                          flex: 1,
-                          opacity: 1,
-                        }}
-                      />
-                    );
-                  } else {
-                    return (
-                      <Image
-                        source={require('./assets/icons/borderLine.png')}
-                        style={{
-                          resizeMode: 'cover',
-                          height: '100%',
-                          width: 'auto',
-                          flex: 1,
-                          opacity: 1,
-                        }}
-                      />
-                    );
-                  }
-                })()}
-              </View>
+              <View style={{flex: 0.5, marginRight: 10}}></View>
               <View
                 style={{
                   flex: 5,
@@ -279,7 +277,7 @@ function Main() {
                       color: '#393E46',
                       fontFamily: 'Roboto-Regular',
                     }}>
-                    {item.action}
+                    {item.eventName}
                   </Text>
                 </View>
 
@@ -334,7 +332,7 @@ function Main() {
 
       <View
         style={{
-          flex: 1,
+          flex: 2,
           alignItems: 'center',
           justifyContent: 'center',
         }}>
@@ -345,6 +343,11 @@ function Main() {
             backgroundColor: startStopButtonColor,
           }}>
           <Text style={styles.ButtonText}>{startStopButtonTitle}</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => Logout(navigation)}
+          style={styles.StartStopButton}>
+          <Text style={styles.ButtonText}>WYLOGUJ</Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -373,4 +376,3 @@ const styles = StyleSheet.create({
     fontSize: 30,
   },
 });
-export default Main;
