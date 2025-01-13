@@ -81,7 +81,7 @@ export default function Login() {
 const styles = StyleSheet.create({
   container: {
     height: '100%',
-    backgroundColor: '#0D1117',
+    backgroundColor: '#F5EDED',
     padding: 20,
   },
   logoSection: {
@@ -101,8 +101,8 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#161B22',
-    borderColor: '#30363D',
+    backgroundColor: '#F5EDED',
+    borderColor: '#6482AD',
     borderWidth: 1,
     borderRadius: 5,
     marginBottom: 15,
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 55,
-    color: '#C9D1D9',
+    color: '#243642',
     fontSize: 25,
     fontFamily: 'RobotoCondensed-Regular',
   },
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#238636',
+    backgroundColor: '#6482AD',
     borderRadius: 5,
   },
   buttonAlt: {
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#FFFFFF',
     fontSize: 25,
-    fontFamily: 'RobotoCondensed-Black',
+    fontFamily: 'RobotoCondensed-Regular',
   },
   registerSection: {
     flex: 1,
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     marginTop: 25,
   },
   registerText: {
-    color: '#C9D1D9',
+    color: '#243642',
     fontSize: 20,
     fontFamily: 'RobotoCondensed-Regular',
     marginBottom: 10,

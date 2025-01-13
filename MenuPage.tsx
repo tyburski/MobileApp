@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Dimensions,
   Image,
+  Pressable,
 } from 'react-native';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {RootStackParamList} from './types';
@@ -15,9 +16,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const {width, height} = Dimensions.get('window'); // Pobieramy wymiary ekranu
 const tileMargin = width * 0.02; // Margines dla kafelków
-const logoHeightRatio = 0.3; // Logo zajmuje 30% wysokości ekranu
 const infoTileHeightRatio = 0.05; // Kafelek pojazdu zajmuje 10% wysokości ekranu
 const totalMarginHeight = tileMargin * 8; // Uwzględniamy marginesy między kafelkami i sekcjami
+
+let deviceWidth = Dimensions.get('window').width;
 
 export default function Menu() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -38,90 +40,54 @@ export default function Menu() {
     }, []),
   );
 
-  // Dynamiczne obliczenie wysokości kafelków
-  const availableHeight =
-    height -
-    height * logoHeightRatio -
-    height * infoTileHeightRatio * 2 -
-    totalMarginHeight;
-  const tileHeight = availableHeight / 6; // Wysokość kafelków dla układu 1x6
-
   const handleTilePress = (route: keyof RootStackParamList) => {
     navigation.navigate(route); // Nawigacja do odpowiedniego ekranu
   };
 
   return (
     <View style={styles.container}>
-      {/* Kafelek z aktualnym pojazdem */}
-      {currentVehicle && (
-        <View style={[styles.infoTile, {height: height * infoTileHeightRatio}]}>
-          <Text style={styles.infoText}>🚗 {currentVehicle}</Text>
-        </View>
-      )}
-
-      {/* Kafelek z aktualną firmą */}
-      <View style={[styles.infoTile, {height: height * infoTileHeightRatio}]}>
-        <Text style={styles.infoText}>🏢 {currentCompany}</Text>
-      </View>
-
-      {/* Sekcja logo */}
-      <View style={[styles.logoSection, {height: height * logoHeightRatio}]}>
-        <Image
-          source={require('./assets/logo.png')} // Ścieżka do logo
-          style={styles.logo}
-          resizeMode="contain"
-        />
-      </View>
-
       {/* Sekcja kafelków */}
       <View style={styles.tilesContainer}>
-        <TouchableOpacity
-          style={[styles.tile, {height: tileHeight}]}
-          onPress={() => handleTilePress('Main')}>
-          <Text style={styles.tileText}>
-            A<Text style={styles.tileText2}>KTUALNA TRASA</Text>
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.row1}>
+          <Pressable
+            style={styles.tile}
+            onPress={() => handleTilePress('Main')}>
+            <Text style={styles.tileText}>TRASA</Text>
+          </Pressable>
 
-        <TouchableOpacity
-          style={[styles.tile, {height: tileHeight}]}
-          onPress={() => handleTilePress('HistoriaTras')}>
-          <Text style={styles.tileText}>
-            H<Text style={styles.tileText2}>ISTORIA TRAS</Text>
-          </Text>
-        </TouchableOpacity>
+          <Pressable
+            style={styles.tile}
+            onPress={() => handleTilePress('HistoriaTras')}>
+            <Text style={styles.tileText}>HISTORIA</Text>
+          </Pressable>
+        </View>
 
-        <TouchableOpacity
-          style={[styles.tile, {height: tileHeight}]}
-          onPress={() => handleTilePress('Firmy')}>
-          <Text style={styles.tileText}>
-            F<Text style={styles.tileText2}>IRMY</Text>
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.row2}>
+          <Pressable
+            style={styles.tile}
+            onPress={() => handleTilePress('Companies')}>
+            <Text style={styles.tileText}>FIRMY</Text>
+          </Pressable>
 
-        <TouchableOpacity
-          style={[styles.tile, {height: tileHeight}]}
-          onPress={() => handleTilePress('Vehicles')}>
-          <Text style={styles.tileText}>
-            P<Text style={styles.tileText2}>OJAZDY</Text>
-          </Text>
-        </TouchableOpacity>
+          <Pressable
+            style={styles.tile}
+            onPress={() => handleTilePress('Vehicles')}>
+            <Text style={styles.tileText}>POJAZDY</Text>
+          </Pressable>
+        </View>
+        <View style={styles.row3}>
+          <Pressable
+            style={styles.tile}
+            onPress={() => handleTilePress('Ustawienia')}>
+            <Text style={styles.tileText}>USTAWIENIA</Text>
+          </Pressable>
 
-        <TouchableOpacity
-          style={[styles.tile, {height: tileHeight}]}
-          onPress={() => handleTilePress('Ustawienia')}>
-          <Text style={styles.tileText}>
-            U<Text style={styles.tileText2}>STAWIENIA</Text>
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tile, styles.logoutTile, {height: tileHeight}]}
-          onPress={() => Logout(navigation)}>
-          <Text style={styles.tileText}>
-            W<Text style={styles.tileText2}>YLOGUJ</Text>
-          </Text>
-        </TouchableOpacity>
+          <Pressable
+            style={{...styles.tile, backgroundColor: '#EE4E4E'}}
+            onPress={() => Logout(navigation)}>
+            <Text style={styles.tileText}>WYLOGUJ</Text>
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -130,8 +96,43 @@ export default function Menu() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0D1117',
-    padding: tileMargin,
+    backgroundColor: '#F5EDED',
+    padding: 2,
+    justifyContent: 'center',
+  },
+  tilesContainer: {
+    height: '100%',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignContent: 'center',
+  },
+  row1: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  row2: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  row3: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tile: {
+    backgroundColor: '#243642',
+    width: deviceWidth / 2 - 2,
+    height: '100%',
+    borderWidth: 2,
+    borderColor: '#F5EDED',
+    borderRadius: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   infoTile: {
     backgroundColor: '#161B22',
@@ -150,35 +151,25 @@ const styles = StyleSheet.create({
     width: '60%',
     height: '60%',
   },
-  tilesContainer: {
-    flex: 1,
-    justifyContent: 'space-between',
-  },
-  tile: {
-    backgroundColor: '#243642',
-    width: '100%',
-    borderRadius: 5,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+
   logoutTile: {
     backgroundColor: '#D32F2F',
   },
   tileText: {
     color: '#C9D1D9',
     fontSize: 30,
-    fontFamily: 'RobotoCondensed-Black',
+    fontFamily: 'RobotoCondensed-Regular',
     textAlign: 'center',
   },
   tileText2: {
     color: '#C9D1D9',
-    fontSize: 25,
-    fontFamily: 'RobotoCondensed-Black',
+    fontSize: 30,
+    fontFamily: 'RobotoCondensed-Regular',
     textAlign: 'center',
   },
   infoText: {
     color: '#C9D1D9',
-    fontSize: 25,
+    fontSize: 30,
     fontFamily: 'RobotoCondensed-Regular',
     textAlign: 'center',
   },

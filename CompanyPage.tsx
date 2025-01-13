@@ -12,100 +12,95 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Picker} from '@react-native-picker/picker';
-import {vehicle} from './Interfaces';
-import {createVehicle, removeVehicle, getVehicles} from './ApiController';
+import {company} from './Interfaces';
+import {createCompany, removeCompany, getCompanies} from './ApiController';
 import {useNavigation} from '@react-navigation/native';
 import {NavigationProp} from '@react-navigation/native';
 import {RootStackParamList} from './types';
 
-export default function VehiclePage() {
+export default function CompanyPage() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const [vehicles, setVehicles] = useState<vehicle[]>([]);
+  const [companies, setCompanies] = useState<company[]>([]);
   const [isCreateModalVisible, setCreateModalVisible] = useState(false);
-  const [newRegistrationNumber, setNewRegistrationNumber] = useState('');
-  const [newVehicleType, setNewVehicleType] = useState('');
+  const [newCompanyName, setNewCompanyName] = useState('');
+  const [newCompanyEmail, setNewCompanyEmail] = useState('');
 
-  const fetchVehicles = async () => {
-    const vehicles = await getVehicles();
-    if (vehicles) {
-      setVehicles(vehicles);
+  const fetchCompanies = async () => {
+    const companies = await getCompanies();
+    if (companies) {
+      setCompanies(companies);
     } else {
       Alert.alert(
-        'Błąd',
-        'Nie udało się pobrać listy pojazdów. Sprawdź połączenie z internetem.',
+        'UPS! Coś poszło nie tak',
+        'Nie udało się pobrać listy firm. Sprawdź połączenie z internetem.',
       );
     }
   };
   useEffect(() => {
-    const initializeVehicles = async () => {
-      await fetchVehicles();
+    const initializeCompanies = async () => {
+      await fetchCompanies();
     };
-    initializeVehicles();
+    initializeCompanies();
   }, []);
 
-  const handleAddVehicle = async () => {
-    const isDuplicate = vehicles.some(
-      vehicle =>
-        vehicle.licensePlate.toUpperCase() ===
-        newRegistrationNumber.toUpperCase(),
+  const handleAddCompany = async () => {
+    const isDuplicate = companies.some(
+      company => company.name.toUpperCase() === newCompanyName.toUpperCase(),
     );
 
     if (isDuplicate) {
-      Alert.alert(
-        'Ups! Coś poszło nie tak',
-        'Pojazd o tym numerze rejestracyjnym już istnieje.',
-      );
+      Alert.alert('Ups! Coś poszło nie tak', 'Taka firma już istnieje.');
       return;
     }
 
-    if (!newRegistrationNumber || !newVehicleType) {
+    if (!newCompanyName || !newCompanyEmail) {
       Alert.alert('Ups! Coś poszło nie tak', 'Wszystkie pola są wymagane.');
       return;
     }
 
-    const newVehicle: vehicle = {
+    const newCompany: company = {
       id: 0,
-      licensePlate: newRegistrationNumber,
-      type: newVehicleType,
+      name: newCompanyName,
+      email: newCompanyEmail,
     };
 
-    const result = await createVehicle(newVehicle);
+    const result = await createCompany(newCompany);
     if (result === true) {
-      fetchVehicles();
+      fetchCompanies();
     } else {
       Alert.alert('Ups! Coś poszło nie tak', 'Sprawdź połączenie z internetem');
     }
-    setNewRegistrationNumber('');
-    setNewVehicleType('');
+    setNewCompanyName('');
+    setNewCompanyEmail('');
     setCreateModalVisible(false);
   };
 
-  const handleRemoveVehicle = async (vehicleId: number) => {
-    const result = await removeVehicle(vehicleId);
+  const handleRemoveCompany = async (companyId: number) => {
+    const result = await removeCompany(companyId);
     console.log(result);
     if (result === true) {
-      fetchVehicles();
+      fetchCompanies();
     } else {
       Alert.alert('Ups! Coś poszło nie tak', 'Sprawdź połączenie z internetem');
     }
   };
 
-  const renderVehicleItem = ({item}: {item: vehicle}) => (
+  const renderVehicleItem = ({item}: {item: company}) => (
     <View style={[styles.vehicleCard]}>
       <View style={styles.vehicleSection}>
         <Text style={styles.vehicleText}>
-          <Text style={styles.vehicleLabel}>NR REJ.: </Text>
-          {item.licensePlate}
+          <Text style={styles.vehicleLabel}>NAZWA: </Text>
+          {item.name}
         </Text>
         <Text style={styles.vehicleText}>
-          <Text style={styles.vehicleLabel}>RODZAJ: </Text>
-          {item.type}
+          <Text style={styles.vehicleLabel}>E-MAIL: </Text>
+          {item.email}
         </Text>
       </View>
       <View style={styles.removeButtonSection}>
         <Pressable
           style={styles.removeIcon}
-          onPress={() => handleRemoveVehicle(item.id)}>
+          onPress={() => handleRemoveCompany(item.id)}>
           <Text style={styles.removeIconText}>USUŃ</Text>
         </Pressable>
       </View>
@@ -124,11 +119,11 @@ export default function VehiclePage() {
           style={styles.menuButton}
           onPress={() => setCreateModalVisible(true)}>
           <Text style={styles.menuButtonText}>DODAJ</Text>
-          <Text style={styles.menuButtonText}>POJAZD</Text>
+          <Text style={styles.menuButtonText}>FIRMĘ</Text>
         </Pressable>
       </View>
       <FlatList
-        data={vehicles}
+        data={companies}
         renderItem={renderVehicleItem}
         keyExtractor={item => item.id.toString()}
         contentContainerStyle={styles.vehicleList}
@@ -141,28 +136,27 @@ export default function VehiclePage() {
         onRequestClose={() => setCreateModalVisible(false)}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>DODAJ NOWY POJAZD</Text>
+            <Text style={styles.modalTitle}>DODAJ NOWĄ FIRMĘ</Text>
             <TextInput
               style={styles.input}
-              placeholder="NR REJESTRACYJNY"
+              placeholder="NAZWA"
               placeholderTextColor="#B0B0B0"
-              value={newRegistrationNumber}
-              onChangeText={setNewRegistrationNumber}
+              value={newCompanyName}
+              onChangeText={setNewCompanyName}
             />
             <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={newVehicleType}
-                onValueChange={itemValue => setNewVehicleType(itemValue)}
-                style={styles.picker}>
-                <Picker.Item label="WYBIERZ RODZAJ POJAZDU" value="" />
-                <Picker.Item label="CIĘŻAROWY" value="CIĘŻAROWY" />
-                <Picker.Item label="BUS" value="BUS" />
-              </Picker>
+              <TextInput
+                style={styles.input}
+                placeholder="EMAIL"
+                placeholderTextColor="#B0B0B0"
+                value={newCompanyEmail}
+                onChangeText={setNewCompanyEmail}
+              />
             </View>
             <View style={styles.modalButtons}>
               <Pressable
                 style={[styles.modalButton, styles.saveButton]}
-                onPress={handleAddVehicle}>
+                onPress={handleAddCompany}>
                 <Text style={styles.buttonText}>DODAJ</Text>
               </Pressable>
               <Pressable

@@ -13,6 +13,7 @@ import Login from './LoginPage.tsx';
 import Main from './MainPage.tsx';
 import Menu from './MenuPage.tsx';
 import Vehicle from './VehiclePage.tsx';
+import Company from './CompanyPage.tsx';
 import {useState, useEffect} from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
@@ -67,6 +68,11 @@ function App() {
         <Stack.Screen
           name="Vehicles"
           component={Vehicle}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="Companies"
+          component={Company}
           options={{headerShown: false}}
         />
       </Stack.Navigator>

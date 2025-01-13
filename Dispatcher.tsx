@@ -29,3 +29,9 @@ export async function Logout(navigation: NavigationProp<RootStackParamList>) {
   console.log('user: ' + (await AsyncStorage.getItem('userId')));
   navigation.navigate('Login');
 }
+
+export function Currency(input: string | null) {
+  if (input === 'EURO') return '€';
+  if (input === 'PLN') return 'Zł';
+  if (input === 'KORONY_CZESKIE') return 'Kč';
+}

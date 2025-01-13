@@ -7,7 +7,7 @@ export type RootStackParamList = {
   Menu: undefined;
   AktualnaTrasa: undefined;
   HistoriaTras: undefined;
-  Firmy: undefined;
+  Companies: undefined;
   Vehicles: undefined;
   Ustawienia: undefined;
   Logout: undefined;
