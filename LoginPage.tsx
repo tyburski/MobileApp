@@ -20,11 +20,7 @@ export default function Login() {
 
   const handleLoginClick = async () => {
     const success = await login(email, password);
-    if (success) {
-      navigation.replace('Menu');
-    } else {
-      Alert.alert('Błąd logowania', 'Nieprawidłowy login lub hasło.');
-    }
+    if (success) navigation.replace('Menu');
   };
 
   return (
