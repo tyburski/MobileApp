@@ -15,7 +15,9 @@ export interface route {
   userId: number;
   companyId: number;
   vehicleId: number;
+  routeEvents: [];
   finished: boolean;
+  currentCountry: string;
 }
 
 export interface routeEvent {
@@ -38,4 +40,44 @@ export interface routeEvent {
   refuelType: string | null;
   borderFrom: string | null;
   borderTo: string | null;
+}
+
+export interface startModel {
+  vehicleId: number | undefined;
+  companyId: number | undefined;
+  latitude: number;
+  longitude: number;
+  country: string;
+}
+export interface pickupModel {
+  latitude: number;
+  longitude: number;
+  routeId: number;
+  pickupCount: number;
+  pickupWeight: number;
+  pickupComment: string;
+}
+
+export interface refuelModel {
+  latitude: number;
+  longitude: number;
+  routeId: number;
+  refuelCount: number;
+  refuelTotal: number;
+  refuelCurrency: string;
+  refuelType: string;
+}
+
+export interface borderModel {
+  latitude: number;
+  longitude: number;
+  routeId: number;
+  borderFrom: string;
+  borderTo: string;
+}
+
+export interface dropModel {
+  eventId: number;
+  dropLatitude: number;
+  dropLongitude: number;
 }

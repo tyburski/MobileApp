@@ -1,12 +1,10 @@
 import {
-  SafeAreaView,
   Text,
   View,
   FlatList,
   Image,
   StyleSheet,
   Pressable,
-  TouchableOpacity,
   Animated,
   Easing,
   TextInput,
@@ -15,27 +13,32 @@ import {
 import {Picker} from '@react-native-picker/picker';
 import {useState, useRef} from 'react';
 import {useEffect} from 'react';
-import Geolocation from '@react-native-community/geolocation';
 import Geofencing from '@rn-bridge/react-native-geofencing';
 import {getNeighbors} from './borders';
-import * as geolib from 'geolib';
 import Sound from 'react-native-sound';
 import * as apiController from './ApiController.tsx';
-import {routeEvent, vehicle, company} from './Interfaces.tsx';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {Logout, Currency} from './Dispatcher.tsx';
+import {
+  route,
+  routeEvent,
+  vehicle,
+  company,
+  dropModel,
+  borderModel,
+  pickupModel,
+  refuelModel,
+  startModel,
+} from './Interfaces.tsx';
+import {Currency} from './Dispatcher.tsx';
 import {useNavigation, useIsFocused} from '@react-navigation/native';
 import {RootStackParamList} from './types';
 import {NavigationProp} from '@react-navigation/native';
-import {Timespan} from 'react-native/Libraries/Utilities/IPerformanceLogger';
 import Moment from 'moment';
 
 export default function Main() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const [currentCoords, setCurrentCoords] = useState({lat: 0, lng: 0});
 
-  const [started, setStarted] = useState(false);
-  const [route, setRoute] = useState<routeEvent[]>([]);
+  const [route, setRoute] = useState<route>();
+  const [routeEvents, setRouteEvents] = useState<routeEvent[]>([]);
   const [borders, setBorders] = useState<string[] | undefined>([]);
   const [vehicles, setVehicles] = useState<vehicle[]>([]);
   const [companies, setCompanies] = useState<company[]>([]);
@@ -64,10 +67,57 @@ export default function Main() {
     text: 'START',
     color: '#243642',
   });
+
+  const playSound = () => {
+    Sound.setCategory('Playback');
+    var sound = new Sound('beep.mp3', Sound.MAIN_BUNDLE, error => {
+      if (error) {
+        console.log('failed to load the sound', error);
+        return;
+      }
+      sound.play();
+    });
+    sound.release();
+  };
+
+  //animacje
   const [progress, setProgress] = useState(new Animated.Value(0));
   const timerRef = useRef<ReturnType<typeof setTimeout> | number>(0);
 
+  const handleStartPress = () => {
+    Animated.timing(progress, {
+      toValue: 1,
+      duration: 2000,
+      easing: Easing.linear,
+      useNativeDriver: true,
+    }).start();
+
+    timerRef.current = setTimeout(() => {
+      handleStartStopClick();
+      handleEndPress();
+    }, 2000);
+  };
+  const handleEndPress = () => {
+    clearTimeout(timerRef.current);
+
+    setProgress(new Animated.Value(0));
+    Animated.timing(progress, {
+      toValue: 0,
+      duration: 0,
+      easing: Easing.linear,
+      useNativeDriver: true,
+    }).start();
+  };
+  const progressInterpolation = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+  });
+
   const spinValue = new Animated.Value(0);
+  const spin = spinValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
   Animated.loop(
     Animated.timing(spinValue, {
       toValue: 1,
@@ -85,40 +135,7 @@ export default function Main() {
     }
   }, [isFocused]);
 
-  const handleStartPress = () => {
-    Animated.timing(progress, {
-      toValue: 1,
-      duration: 2000,
-      easing: Easing.linear,
-      useNativeDriver: true,
-    }).start();
-
-    timerRef.current = setTimeout(() => {
-      handleStartStopClick();
-      handleEndPress();
-    }, 2000);
-  };
-
-  const handleEndPress = () => {
-    clearTimeout(timerRef.current);
-
-    setProgress(new Animated.Value(0));
-    Animated.timing(progress, {
-      toValue: 0,
-      duration: 0,
-      easing: Easing.linear,
-      useNativeDriver: true,
-    }).start();
-  };
-  const progressInterpolation = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 1],
-  });
-  const spin = spinValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
+  //pobieranie danych
   const getvehicles = async () => {
     setVehicles(await apiController.getVehicles());
   };
@@ -130,6 +147,7 @@ export default function Main() {
     if (route.length > 0) {
       setButtonState({text: 'STOP', color: '#D32F2F'});
       setRoute(route);
+      setRouteEvents(route.routeEvents);
     }
     setLoadingModalVisible(false);
   };
@@ -138,81 +156,38 @@ export default function Main() {
     setBorders(res);
   };
 
-  useEffect(() => {
-    Geolocation.watchPosition(
-      position => {
-        setCurrentCoords({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        });
-      },
-      error => {
-        console.log(error.code, error.message);
-      },
-      {enableHighAccuracy: true, maximumAge: 0, distanceFilter: 0},
-    );
-  });
-
-  const playSound = () => {
-    Sound.setCategory('Playback');
-    var sound = new Sound('beep.mp3', Sound.MAIN_BUNDLE, error => {
-      if (error) {
-        console.log('failed to load the sound', error);
-        return;
-      }
-      sound.play();
-    });
-    sound.release();
-  };
-
+  //przyciski
   const startRoute = async () => {
-    const result = await apiController.newRoute(
-      selectedVehicle?.id,
-      selectedCompany?.id,
-    );
+    setStartModalVisible(false);
+    setLoadingModalVisible(true);
     const position = await Geofencing.getCurrentLocation();
-    if (result > 0) {
-      const newEv: routeEvent = {
-        id: 0,
-        routeId: result,
-        eventName: 'start',
-        date: new Date(),
+    if (selectedVehicle !== undefined || selectedCompany !== undefined) {
+      const start: startModel = {
+        vehicleId: selectedVehicle?.id,
+        companyId: selectedCompany?.id,
         latitude: position.latitude,
         longitude: position.longitude,
         country: position.isoCountryCode,
-        pickupCount: null,
-        pickupWeight: null,
-        pickupComment: null,
-        dropDate: null,
-        dropLatitude: null,
-        dropLongitude: null,
-        refuelCount: null,
-        refuelTotal: null,
-        refuelCurrency: null,
-        refuelType: null,
-        borderFrom: null,
-        borderTo: null,
       };
-      const res1 = await apiController.newEvent(newEv);
+      const result = await apiController.newRoute(start);
 
-      if (res1 === true) {
-        setStartModalVisible(false);
-        setLoadingModalVisible(true);
+      if (result === true) {
         getRoute();
-      }
+      } else setLoadingModalVisible(false);
     }
   };
-
   const finishRoute = async () => {
-    setLoadingModalVisible(true);
-    const id = route[route.length - 1].routeId;
-    const res = await apiController.finishRoute(id);
+    if (route !== undefined) {
+      setLoadingModalVisible(true);
+      const id = route.id;
+      const response = await apiController.finishRoute(id);
 
-    if (res === true) {
-      setButtonState({text: 'START', color: '#243642'});
-      setRoute([]);
+      if (response === true) {
+        setButtonState({text: 'START', color: '#243642'});
+        setRouteEvents([]);
+      }
+      setLoadingModalVisible(false);
     }
-    setLoadingModalVisible(false);
   };
   const handleStartStopClick = async () => {
     if (buttonState.text === 'START') {
@@ -225,11 +200,9 @@ export default function Main() {
       playSound();
     }
   };
-
   const startRouteClick = () => {
     startRoute();
   };
-
   const handleRefuelClick = () => {
     if (buttonState.text === 'START') {
       setErrorModalVisible(true);
@@ -237,41 +210,30 @@ export default function Main() {
       setRefuelModalVisible(true);
     }
   };
-
   const confirmRefuelClick = async () => {
-    setRefuelModalVisible(false);
-    setLoadingModalVisible(true);
     const position = await Geofencing.getCurrentLocation();
 
-    const newEv: routeEvent = {
-      id: 0,
-      routeId: route[0].routeId,
-      eventName: 'refuel',
-      date: new Date(),
-      latitude: position.latitude,
-      longitude: position.longitude,
-      country: route[0].country,
-      pickupCount: null,
-      pickupWeight: null,
-      pickupComment: null,
-      dropDate: null,
-      dropLatitude: null,
-      dropLongitude: null,
-      refuelCount: parseInt(refuelCount),
-      refuelTotal: parseInt(refuelTotal),
-      refuelCurrency: refuelCurrency,
-      refuelType: refuelType,
-      borderFrom: null,
-      borderTo: null,
-    };
-    const res1 = await apiController.newEvent(newEv);
+    if (route !== undefined) {
+      setRefuelModalVisible(false);
+      setLoadingModalVisible(true);
 
-    if (res1 === true) {
-      getRoute();
+      const refuel: refuelModel = {
+        latitude: position.latitude,
+        longitude: position.longitude,
+        routeId: route.id,
+        refuelCount: parseInt(refuelCount),
+        refuelTotal: parseInt(refuelTotal),
+        refuelCurrency: refuelCurrency,
+        refuelType: refuelType,
+      };
+      const res1 = await apiController.newRefuel(refuel);
+
+      if (res1 === true) {
+        playSound();
+        getRoute();
+      } else setLoadingModalVisible(false);
     }
-    playSound();
   };
-
   const handlePickupClick = () => {
     if (buttonState.text === 'START') {
       setErrorModalVisible(true);
@@ -279,98 +241,77 @@ export default function Main() {
       setPickupModalVisible(true);
     }
   };
+  const confirmPickupClick = async () => {
+    const position = await Geofencing.getCurrentLocation();
 
+    if (route !== undefined) {
+      setPickupModalVisible(false);
+      setLoadingModalVisible(true);
+
+      const pickup: pickupModel = {
+        latitude: position.latitude,
+        longitude: position.longitude,
+        routeId: route.id,
+        pickupCount: parseInt(pickupCount),
+        pickupWeight: parseInt(pickupWeight),
+        pickupComment: pickupComment,
+      };
+      const res1 = await apiController.newPickup(pickup);
+
+      if (res1 === true) {
+        playSound();
+        getRoute();
+      } else setLoadingModalVisible(false);
+    }
+  };
   const handleDropClick = async (event: routeEvent) => {
     setLoadingModalVisible(true);
     const position = await Geofencing.getCurrentLocation();
-    event.dropDate = new Date();
-    event.dropLatitude = position.latitude;
-    event.dropLongitude = position.longitude;
-    const result = await apiController.drop(event);
-    if (result === true) {
-      console.log('drop');
-      getRoute();
-    }
-  };
-
-  const confirmPickupClick = async () => {
-    setPickupModalVisible(false);
-    setLoadingModalVisible(true);
-    const position = await Geofencing.getCurrentLocation();
-
-    const newEv: routeEvent = {
-      id: 0,
-      routeId: route[0].routeId,
-      eventName: 'pickup',
-      date: new Date(),
-      latitude: position.latitude,
-      longitude: position.longitude,
-      country: route[0].country,
-      pickupCount: parseInt(pickupCount),
-      pickupWeight: parseInt(pickupWeight),
-      pickupComment: pickupComment,
-      dropDate: null,
-      dropLatitude: null,
-      dropLongitude: null,
-      refuelCount: null,
-      refuelTotal: null,
-      refuelCurrency: null,
-      refuelType: null,
-      borderFrom: null,
-      borderTo: null,
+    const drop: dropModel = {
+      eventId: event.id,
+      dropLatitude: position.latitude,
+      dropLongitude: position.longitude,
     };
-    const res1 = await apiController.newEvent(newEv);
-
-    if (res1 === true) {
+    const result = await apiController.drop(drop);
+    if (result === true) {
       getRoute();
-    }
-    playSound();
+    } else setLoadingModalVisible(false);
   };
-
   const handleBorderClick = () => {
     if (buttonState.text === 'START') {
       setErrorModalVisible(true);
     } else if (buttonState.text === 'STOP') {
-      getBorders(route[0].country);
-      console.log(route[0].country);
-      setBorderModalVisible(true);
+      if (route !== undefined) {
+        getBorders(route.currentCountry);
+        setBorderModalVisible(true);
+      }
     }
   };
   const confirmBorderClick = async (input: string) => {
-    setBorders([]);
-    setBorderModalVisible(false);
-    setLoadingModalVisible(true);
     const position = await Geofencing.getCurrentLocation();
 
-    const newEv: routeEvent = {
-      id: 0,
-      routeId: route[0].routeId,
-      eventName: 'border',
-      date: new Date(),
-      latitude: position.latitude,
-      longitude: position.longitude,
-      country: input,
-      pickupCount: null,
-      pickupWeight: null,
-      pickupComment: null,
-      dropDate: null,
-      dropLatitude: null,
-      dropLongitude: null,
-      refuelCount: null,
-      refuelTotal: null,
-      refuelCurrency: null,
-      refuelType: null,
-      borderFrom: route[0].country,
-      borderTo: input,
-    };
-    const res1 = await apiController.newEvent(newEv);
+    if (route !== undefined) {
+      setBorders([]);
+      setBorderModalVisible(false);
+      setLoadingModalVisible(true);
 
-    if (res1 === true) {
-      getRoute();
+      const border: borderModel = {
+        latitude: position.latitude,
+        longitude: position.longitude,
+        routeId: route.id,
+        borderFrom: route.currentCountry,
+        borderTo: input,
+      };
+      const response = await apiController.newBorder(border);
+
+      if (response === true) {
+        playSound();
+        getRoute();
+      } else setLoadingModalVisible(false);
     }
-    playSound();
   };
 
+  //lista zdarzeń
   const renderRouteEventItem = ({item}: {item: routeEvent}) => (
     <View style={[styles.eventCard]}>
       <View style={styles.eventIconSection}>
@@ -501,6 +442,8 @@ export default function Main() {
       </View>
     </View>
   );
+
+  //lista granic
   const renderBorderEventItem = ({item}: {item: string}) => (
     <View style={[styles.borderCard]}>
       <View style={styles.borderSection}>
@@ -512,6 +455,7 @@ export default function Main() {
       </View>
     </View>
   );
+
   return (
     <View style={styles.container}>
       <View style={styles.menuContainer}>
@@ -557,7 +501,7 @@ export default function Main() {
         </Pressable>
       </View>
       <FlatList
-        data={route}
+        data={routeEvents}
         renderItem={renderRouteEventItem}
         keyExtractor={item => item.id.toString()}
         contentContainerStyle={styles.eventsList}
