@@ -7,12 +7,6 @@ import {
   dropModel,
   startModel,
 } from './Interfaces.tsx';
-import {useNavigation} from '@react-navigation/native';
-import {RootStackParamList} from './types';
-import {NavigationProp} from '@react-navigation/native';
-import {Logout} from './Dispatcher';
-
-const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
 const setToken = async (token: string) => {
   await AsyncStorage.setItem('token', token);
@@ -58,25 +52,24 @@ export async function createVehicle(type: string, licensePlate: string) {
       },
     );
     console.log(response.status);
-    if (response.status === 201) {
+    if (response.status === 204) {
       return true;
     } else if (response.status === 400) {
       Alert.alert('Nie można utworzyć pojazdu');
       return false;
     } else if (response.status === 401) {
-      Logout(navigation);
       return false;
     } else {
       Alert.alert('Sprawdź połączenie z internetem');
       return false;
     }
-  } else Logout(navigation);
+  } else return false;
 }
 export async function removeVehicle(id: number) {
   const token = await AsyncStorage.getItem('token');
   if (token) {
     const response = await fetch(
-      `http://192.168.0.101:27270/api/delete?vehicleId=${id}`,
+      `http://192.168.0.101:27270/api/vehicle/delete?vehicleId=${id}`,
       {
         method: 'POST',
         headers: {
@@ -90,13 +83,12 @@ export async function removeVehicle(id: number) {
       Alert.alert('Nie można usunąć pojazdu');
       return false;
     } else if (response.status === 401) {
-      Logout(navigation);
       return false;
     } else {
       Alert.alert('Sprawdź połączenie z internetem');
       return false;
     }
-  } else Logout(navigation);
+  } else return false;
 }
 export async function getVehicles() {
   const token = await AsyncStorage.getItem('token');
@@ -111,17 +103,19 @@ export async function getVehicles() {
     if (response.status === 200) {
       const responseData = await response.json();
       return responseData || [];
+    } else if (response.status === 204) {
+      Alert.alert('Lista jest pusta');
+      return false;
     } else if (response.status === 400) {
       Alert.alert('Nie można pobrać listy pojazdów');
       return false;
     } else if (response.status === 401) {
-      Logout(navigation);
       return false;
     } else {
       Alert.alert('Sprawdź połączenie z internetem');
       return false;
     }
-  } else Logout(navigation);
+  } else return false;
 }
 
 //company
@@ -137,19 +131,19 @@ export async function createCompany(name: string, email: string) {
         },
       },
     );
-    if (response.status === 201) {
+    console.log(response.status);
+    if (response.status === 204) {
       return true;
     } else if (response.status === 400) {
       Alert.alert('Nie można utworzyć firmy');
       return false;
     } else if (response.status === 401) {
-      Logout(navigation);
       return false;
     } else {
       Alert.alert('Sprawdź połączenie z internetem');
       return false;
     }
-  } else Logout(navigation);
+  } else return false;
 }
 export async function removeCompany(id: number) {
   const token = await AsyncStorage.getItem('token');
@@ -169,13 +163,12 @@ export async function removeCompany(id: number) {
       Alert.alert('Nie można usunąć firmy');
       return false;
     } else if (response.status === 401) {
-      Logout(navigation);
       return false;
     } else {
       Alert.alert('Sprawdź połączenie z internetem');
       return false;
     }
-  } else Logout(navigation);
+  } else return false;
 }
 export async function getCompanies() {
   const token = await AsyncStorage.getItem('token');
@@ -194,13 +187,12 @@ export async function getCompanies() {
       Alert.alert('Nie można pobrać listy firm');
       return false;
     } else if (response.status === 401) {
-      Logout(navigation);
       return false;
     } else {
       Alert.alert('Sprawdź połączenie z internetem');
       return false;
     }
-  } else Logout(navigation);
+  } else return false;
 }
 
 //route
@@ -208,9 +200,11 @@ export async function newRoute(input: startModel) {
   const token = await AsyncStorage.getItem('token');
 
   if (token) {
-    const response = await fetch('http://192.168.0.101:27270/app/newRoute', {
+    const response = await fetch('http://192.168.0.101:27270/api/route/start', {
       method: 'POST',
       headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
         accessToken: token,
       },
       body: JSON.stringify({
@@ -222,19 +216,19 @@ export async function newRoute(input: startModel) {
       }),
     });
 
-    if (response.status === 201) {
+    console.log(response.status);
+    if (response.status === 204) {
       return true;
     } else if (response.status === 400) {
       Alert.alert('Nie można utworzyć trasy');
       return false;
     } else if (response.status === 401) {
-      Logout(navigation);
       return false;
     } else {
       Alert.alert('Sprawdź połączenie z internetem');
       return false;
     }
-  } else Logout(navigation);
+  } else return false;
 }
 export async function finishRoute(input: number) {
   const token = await AsyncStorage.getItem('token');
@@ -254,13 +248,12 @@ export async function finishRoute(input: number) {
       Alert.alert('Nie można zakończyć trasy');
       return false;
     } else if (response.status === 401) {
-      Logout(navigation);
       return false;
     } else {
       Alert.alert('Sprawdź połączenie z internetem');
       return false;
     }
-  } else Logout(navigation);
+  } else return false;
 }
 export async function newPickup(input: pickupModel) {
   const response = await fetch('http://192.168.0.101:27270/api/pickup/create', {
@@ -279,13 +272,12 @@ export async function newPickup(input: pickupModel) {
     }),
   });
 
-  if (response.status === 201) {
+  if (response.status === 204) {
     return true;
   } else if (response.status === 400) {
     Alert.alert('Nie można utworzyć zdarzenia');
     return false;
   } else if (response.status === 401) {
-    Logout(navigation);
     return false;
   } else {
     Alert.alert('Sprawdź połączenie z internetem');
@@ -310,13 +302,12 @@ export async function newRefuel(input: refuelModel) {
     }),
   });
 
-  if (response.status === 201) {
+  if (response.status === 204) {
     return true;
   } else if (response.status === 400) {
     Alert.alert('Nie można utworzyć zdarzenia');
     return false;
   } else if (response.status === 401) {
-    Logout(navigation);
     return false;
   } else {
     Alert.alert('Sprawdź połączenie z internetem');
@@ -339,13 +330,12 @@ export async function newBorder(input: borderModel) {
     }),
   });
 
-  if (response.status === 201) {
+  if (response.status === 204) {
     return true;
   } else if (response.status === 400) {
     Alert.alert('Nie można utworzyć zdarzenia');
     return false;
   } else if (response.status === 401) {
-    Logout(navigation);
     return false;
   } else {
     Alert.alert('Sprawdź połączenie z internetem');
@@ -371,7 +361,6 @@ export async function drop(input: dropModel) {
     Alert.alert('Nie można utworzyć zdarzenia');
     return false;
   } else if (response.status === 401) {
-    Logout(navigation);
     return false;
   } else {
     Alert.alert('Sprawdź połączenie z internetem');
@@ -391,12 +380,13 @@ export async function getRoute() {
     if (response.status === 200) {
       const responseData = await response.json();
       return responseData;
+    } else if (response.status === 204) {
+      return false;
     } else if (response.status === 401) {
-      Logout(navigation);
       return false;
     } else {
       Alert.alert('Sprawdź połączenie z internetem');
       return false;
     }
-  } else Logout(navigation);
+  } else return false;
 }

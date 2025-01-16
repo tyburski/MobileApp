@@ -63,17 +63,9 @@ export default function VehiclePage() {
       return;
     }
 
-    const newVehicle: vehicle = {
-      id: 0,
-      licensePlate: newRegistrationNumber,
-      type: newVehicleType,
-    };
-
-    const result = await createVehicle(newVehicle);
+    const result = await createVehicle(newVehicleType, newRegistrationNumber);
     if (result === true) {
       fetchVehicles();
-    } else {
-      Alert.alert('Ups! Coś poszło nie tak', 'Sprawdź połączenie z internetem');
     }
     setNewRegistrationNumber('');
     setNewVehicleType('');

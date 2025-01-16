@@ -14,39 +14,19 @@ import {NavigationProp} from '@react-navigation/native';
 import {Logout} from './Dispatcher';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const {width, height} = Dimensions.get('window'); // Pobieramy wymiary ekranu
-const tileMargin = width * 0.02; // Margines dla kafelków
-const infoTileHeightRatio = 0.05; // Kafelek pojazdu zajmuje 10% wysokości ekranu
-const totalMarginHeight = tileMargin * 8; // Uwzględniamy marginesy między kafelkami i sekcjami
-
+const {width, height} = Dimensions.get('window');
+const tileMargin = width * 0.02;
 let deviceWidth = Dimensions.get('window').width;
 
 export default function Menu() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const [currentVehicle, setCurrentVehicle] = useState<string | null>(null);
-  const [currentCompany, setCurrentCompany] = useState<string | null>(
-    'Firma XYZ',
-  );
-
-  const loadCurrentVehicle = async () => {
-    const storedVehicle = await AsyncStorage.getItem('selectedVehicle');
-    setCurrentVehicle(storedVehicle);
-  };
-
-  // Aktualizowanie pojazdu przy każdym wejściu na stronę
-  useFocusEffect(
-    React.useCallback(() => {
-      loadCurrentVehicle();
-    }, []),
-  );
 
   const handleTilePress = (route: keyof RootStackParamList) => {
-    navigation.navigate(route); // Nawigacja do odpowiedniego ekranu
+    navigation.navigate(route);
   };
 
   return (
     <View style={styles.container}>
-      {/* Sekcja kafelków */}
       <View style={styles.tilesContainer}>
         <View style={styles.row1}>
           <Pressable

@@ -144,10 +144,10 @@ export default function Main() {
   };
   const getRoute = async () => {
     const route = await apiController.getRoute();
-    if (route.length > 0) {
+    if (route !== false) {
       setButtonState({text: 'STOP', color: '#D32F2F'});
       setRoute(route);
-      setRouteEvents(route.routeEvents);
+      setRouteEvents(route.routeEvents.reverse());
     }
     setLoadingModalVisible(false);
   };
@@ -170,7 +170,6 @@ export default function Main() {
         country: position.isoCountryCode,
       };
       const result = await apiController.newRoute(start);
-
       if (result === true) {
         getRoute();
       } else setLoadingModalVisible(false);

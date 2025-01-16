@@ -29,11 +29,6 @@ export default function CompanyPage() {
     const companies = await getCompanies();
     if (companies) {
       setCompanies(companies);
-    } else {
-      Alert.alert(
-        'UPS! Coś poszło nie tak',
-        'Nie udało się pobrać listy firm. Sprawdź połączenie z internetem.',
-      );
     }
   };
   useEffect(() => {
@@ -44,27 +39,12 @@ export default function CompanyPage() {
   }, []);
 
   const handleAddCompany = async () => {
-    const isDuplicate = companies.some(
-      company => company.name.toUpperCase() === newCompanyName.toUpperCase(),
-    );
-
-    if (isDuplicate) {
-      Alert.alert('Ups! Coś poszło nie tak', 'Taka firma już istnieje.');
-      return;
-    }
-
     if (!newCompanyName || !newCompanyEmail) {
       Alert.alert('Ups! Coś poszło nie tak', 'Wszystkie pola są wymagane.');
       return;
     }
 
-    const newCompany: company = {
-      id: 0,
-      name: newCompanyName,
-      email: newCompanyEmail,
-    };
-
-    const result = await createCompany(newCompany);
+    const result = await createCompany(newCompanyName, newCompanyEmail);
     if (result === true) {
       fetchCompanies();
     } else {
