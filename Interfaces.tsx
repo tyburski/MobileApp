@@ -1,3 +1,10 @@
+export interface registerModel {
+  emailAddress: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+}
+
 export interface vehicle {
   id: number;
   licensePlate: string;

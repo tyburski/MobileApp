@@ -74,7 +74,7 @@ export default function Menu() {
           </Pressable>
           <Pressable
             style={styles.tileHorizontal}
-            onPress={() => handleTilePress('Ustawienia')}>
+            onPress={() => handleTilePress('Settings')}>
             <Text style={styles.tileText}>USTAWIENIA</Text>
           </Pressable>
 

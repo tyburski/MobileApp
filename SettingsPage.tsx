@@ -16,21 +16,22 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Picker} from '@react-native-picker/picker';
-import {company} from './Interfaces';
-import {createCompany, removeCompany, getCompanies} from './ApiController';
+import {vehicle} from './Interfaces';
+import {changePassword, deleteUser} from './ApiController';
 import {useNavigation, useIsFocused} from '@react-navigation/native';
 import {NavigationProp} from '@react-navigation/native';
 import {RootStackParamList} from './types';
+import {Logout} from './Dispatcher';
 
 const {width, height} = Dimensions.get('window');
 
-export default function CompanyPage() {
+export default function SettingsPage() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const [companies, setCompanies] = useState<company[] | undefined>();
-  const [isCreateModalVisible, setCreateModalVisible] = useState(false);
-  const [newCompanyName, setNewCompanyName] = useState('');
-  const [newCompanyEmail, setNewCompanyEmail] = useState('');
+  const [newRegistrationNumber, setNewRegistrationNumber] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoadingModalVisible, setLoadingModalVisible] = useState(false);
+  const [isDeleteModalVisible, setDeleteModalVisible] = useState(false);
   const [isLoadingModalError, setLoadingModalError] = useState(true);
 
   const spinValue = new Animated.Value(0);
@@ -47,75 +48,50 @@ export default function CompanyPage() {
     }),
   ).start();
 
-  const fetchCompanies = async () => {
-    setLoadingModalError(false);
-    setLoadingModalVisible(true);
-    const companies = await getCompanies();
-    setLoadingModalVisible(false);
-    setCompanies(companies);
-  };
-
-  const isFocused = useIsFocused();
-  useEffect(() => {
-    if (isFocused) {
-      fetchCompanies();
-    }
-  }, [isFocused]);
-
-  const handleAddCompany = () => {
-    setNewCompanyName('');
-    setNewCompanyEmail('');
-    setCreateModalVisible(true);
-  };
-
-  const confirmAddCompany = async () => {
-    if (!newCompanyName || !newCompanyEmail) {
+  const handleChangePasswordClick = async () => {
+    if (!password || !confirmPassword) {
       Alert.alert('', 'Wszystkie pola są wymagane.');
       return;
     }
-    setCreateModalVisible(false);
+    if (password !== confirmPassword) {
+      Alert.alert('', 'Wprowadzone hasła nie są takie same.');
+      return;
+    }
     setLoadingModalError(false);
     setLoadingModalVisible(true);
-    const result = await createCompany(newCompanyName, newCompanyEmail);
+    const result = await changePassword(password);
     if (result === true) {
-      fetchCompanies();
-    } else setLoadingModalError(true);
+      setLoadingModalVisible(false);
+      setPassword('');
+      setConfirmPassword('');
+      Alert.alert('', 'Hasło zostało zmienione.');
+    } else {
+      setPassword('');
+      setConfirmPassword('');
+      setLoadingModalError(true);
+    }
   };
 
-  const handleRemoveCompany = async (companyId: number) => {
+  const handleDeleteClick = () => {
+    setDeleteModalVisible(true);
+  };
+  const handleDeleteUser = async () => {
+    setDeleteModalVisible(false);
     setLoadingModalError(false);
     setLoadingModalVisible(true);
-    const result = await removeCompany(companyId);
+
+    const result = await deleteUser();
     if (result === true) {
-      fetchCompanies();
+      setLoadingModalVisible(false);
+      Alert.alert('', 'Użytkownik został usunięty.\nZostniesz wylogowany.', [
+        {onPress: () => Logout(navigation)},
+      ]);
     } else setLoadingModalError(false);
   };
 
   const hanldeCloseLoadingModal = () => {
     setLoadingModalVisible(false);
   };
-
-  const renderVehicleItem = ({item}: {item: company}) => (
-    <View style={[styles.vehicleCard]}>
-      <View style={styles.vehicleSection}>
-        <Text style={styles.vehicleText}>
-          <Text style={styles.vehicleLabel}>NAZWA: </Text>
-          {item.name}
-        </Text>
-        <Text style={styles.vehicleText}>
-          <Text style={styles.vehicleLabel}>E-MAIL: </Text>
-          {item.email}
-        </Text>
-      </View>
-      <View style={styles.removeButtonSection}>
-        <Pressable
-          style={styles.removeIcon}
-          onPress={() => handleRemoveCompany(item.id)}>
-          <Text style={styles.removeIconText}>USUŃ</Text>
-        </Pressable>
-      </View>
-    </View>
-  );
 
   return (
     <View style={styles.container}>
@@ -125,75 +101,87 @@ export default function CompanyPage() {
           onPress={() => navigation.navigate('Menu')}>
           <Text style={styles.menuButtonText}>↲ POWRÓT</Text>
         </Pressable>
-        <Pressable
-          style={{...styles.menuButton, backgroundColor: '#0f3877'}}
-          onPress={() => handleAddCompany()}>
-          <Text style={styles.menuButtonText}>DODAJ FIRMĘ</Text>
-        </Pressable>
+        <View
+          style={{...styles.menuButton, backgroundColor: 'transparent'}}></View>
       </View>
-      {companies !== undefined && (
-        <FlatList
-          data={companies}
-          renderItem={renderVehicleItem}
-          keyExtractor={item => item.id.toString()}
-          contentContainerStyle={styles.vehicleList}
-        />
-      )}
-      {companies === undefined && (
-        <View style={styles.emptyListContainer}>
-          <Text style={styles.emptyListText}>
-            Wygląda na to, że nic tu nie ma!
-          </Text>
-          <Text style={styles.emptyListText}>
-            Kliknij przycisk na górze, aby dodać firmę.
-          </Text>
+      <View style={styles.changePasswordContainer}>
+        <View style={styles.inputWrapper}>
+          <Image
+            source={require('./assets/icons/padlock.png')}
+            style={styles.icon}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Hasło"
+            placeholderTextColor="#B0B0B0"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
         </View>
-      )}
+        <View style={styles.inputWrapper}>
+          <Image
+            source={require('./assets/icons/padlock.png')}
+            style={styles.icon}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Powtórz hasło"
+            placeholderTextColor="#B0B0B0"
+            secureTextEntry
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+          />
+        </View>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleChangePasswordClick}>
+          <Text style={styles.buttonText}>ZMIEŃ HASŁO</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.deleteUserContainer}>
+        <TouchableOpacity
+          style={{...styles.button, backgroundColor: '#EE4E4E'}}
+          onPress={handleDeleteClick}>
+          <Text style={styles.buttonText}>USUŃ KONTO</Text>
+        </TouchableOpacity>
+      </View>
 
       <Modal
-        visible={isCreateModalVisible}
+        visible={isDeleteModalVisible}
         transparent={true}
         animationType="none"
-        onRequestClose={() => setCreateModalVisible(false)}>
+        onRequestClose={() => setDeleteModalVisible(false)}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>DODAJ NOWĄ FIRMĘ</Text>
+            <Text style={styles.modalTitle}>USUWANIE KONTA</Text>
 
             <View style={styles.pickerContainer}>
-              <View style={styles.inputWrapper}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="NAZWA FIRMY"
-                  placeholderTextColor="#B0B0B0"
-                  value={newCompanyName}
-                  onChangeText={setNewCompanyName}
-                />
-              </View>
-              <View style={styles.inputWrapper}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="E-MAIL FIRMY"
-                  placeholderTextColor="#B0B0B0"
-                  value={newCompanyEmail}
-                  onChangeText={setNewCompanyEmail}
-                />
-              </View>
+              <Text
+                style={{
+                  ...styles.modalText,
+                  marginBottom: 20,
+                  textAlign: 'center',
+                }}>
+                Czy chcesz usunąć konto?
+              </Text>
             </View>
             <View style={styles.modalButtons}>
               <Pressable
                 style={[styles.modalButton, styles.saveButton]}
-                onPress={confirmAddCompany}>
-                <Text style={styles.buttonText}>DODAJ</Text>
+                onPress={() => handleDeleteUser()}>
+                <Text style={styles.buttonText}>AKCEPTUJ</Text>
               </Pressable>
               <Pressable
                 style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setCreateModalVisible(false)}>
+                onPress={() => setDeleteModalVisible(false)}>
                 <Text style={styles.buttonText}>ANULUJ</Text>
               </Pressable>
             </View>
           </View>
         </View>
       </Modal>
+
       {/* Modal Loading*/}
       <Modal
         visible={isLoadingModalVisible}
@@ -270,7 +258,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5EDED',
-    padding: 5,
   },
   menuContainer: {
     height: 80,
@@ -278,7 +265,36 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderBottomLeftRadius: 25,
     borderTopRightRadius: 25,
-    padding: 10,
+    margin: 20,
+  },
+  changePasswordContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: width * 0.9,
+    margin: 20,
+  },
+  deleteUserContainer: {
+    height: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: width * 0.9,
+    margin: 20,
+  },
+  icon: {
+    width: 30,
+    height: 30,
+    resizeMode: 'contain',
+    marginRight: 10,
+  },
+  button: {
+    width: '100%',
+    height: 60,
+    marginTop: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#0f3877',
+    borderRadius: 25,
   },
   emptyListContainer: {
     flex: 1,
@@ -383,6 +399,7 @@ const styles = StyleSheet.create({
     textAlign: 'left',
   },
   inputWrapper: {
+    flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F5EDED',
     borderColor: '#0f3877',

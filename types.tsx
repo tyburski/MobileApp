@@ -9,7 +9,7 @@ export type RootStackParamList = {
   HistoriaTras: undefined;
   Companies: undefined;
   Vehicles: undefined;
-  Ustawienia: undefined;
+  Settings: undefined;
   Logout: undefined;
 };
 

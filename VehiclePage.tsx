@@ -10,12 +10,15 @@ import {
   Alert,
   Pressable,
   Dimensions,
+  Animated,
+  Easing,
+  Image,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Picker} from '@react-native-picker/picker';
 import {vehicle} from './Interfaces';
 import {createVehicle, removeVehicle, getVehicles} from './ApiController';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useIsFocused} from '@react-navigation/native';
 import {NavigationProp} from '@react-navigation/native';
 import {RootStackParamList} from './types';
 
@@ -23,66 +26,73 @@ const {width, height} = Dimensions.get('window');
 
 export default function VehiclePage() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const [vehicles, setVehicles] = useState<vehicle[]>([]);
+  const [vehicles, setVehicles] = useState<vehicle[] | undefined>();
   const [isCreateModalVisible, setCreateModalVisible] = useState(false);
   const [newRegistrationNumber, setNewRegistrationNumber] = useState('');
   const [newVehicleType, setNewVehicleType] = useState('');
+  const [isLoadingModalVisible, setLoadingModalVisible] = useState(false);
+  const [isLoadingModalError, setLoadingModalError] = useState(true);
+
+  const spinValue = new Animated.Value(0);
+  const spin = spinValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+  Animated.loop(
+    Animated.timing(spinValue, {
+      toValue: 1,
+      duration: 1000,
+      easing: Easing.linear,
+      useNativeDriver: true,
+    }),
+  ).start();
 
   const fetchVehicles = async () => {
-    const vehicles = await getVehicles();
-    if (vehicles) {
-      setVehicles(vehicles);
-    } else {
-      Alert.alert(
-        'Błąd',
-        'Nie udało się pobrać listy pojazdów. Sprawdź połączenie z internetem.',
-      );
-    }
+    setLoadingModalError(false);
+    setLoadingModalVisible(true);
+    const companies = await getVehicles();
+    setLoadingModalVisible(false);
+    setVehicles(companies);
   };
+
+  const isFocused = useIsFocused();
   useEffect(() => {
-    const initializeVehicles = async () => {
-      await fetchVehicles();
-    };
-    initializeVehicles();
-  }, []);
-
-  const handleAddVehicle = async () => {
-    const isDuplicate = vehicles.some(
-      vehicle =>
-        vehicle.licensePlate.toUpperCase() ===
-        newRegistrationNumber.toUpperCase(),
-    );
-
-    if (isDuplicate) {
-      Alert.alert(
-        'Ups! Coś poszło nie tak',
-        'Pojazd o tym numerze rejestracyjnym już istnieje.',
-      );
-      return;
+    if (isFocused) {
+      fetchVehicles();
     }
+  }, [isFocused]);
 
+  const handleAddCompany = () => {
+    setNewRegistrationNumber('');
+    setNewVehicleType('');
+    setCreateModalVisible(true);
+  };
+
+  const confirmAddVehicle = async () => {
     if (!newRegistrationNumber || !newVehicleType) {
-      Alert.alert('Ups! Coś poszło nie tak', 'Wszystkie pola są wymagane.');
+      Alert.alert('', 'Wszystkie pola są wymagane.');
       return;
     }
-
+    setCreateModalVisible(false);
+    setLoadingModalError(false);
+    setLoadingModalVisible(true);
     const result = await createVehicle(newVehicleType, newRegistrationNumber);
     if (result === true) {
       fetchVehicles();
-    }
-    setNewRegistrationNumber('');
-    setNewVehicleType('');
-    setCreateModalVisible(false);
+    } else setLoadingModalError(true);
   };
 
-  const handleRemoveVehicle = async (vehicleId: number) => {
-    const result = await removeVehicle(vehicleId);
-    console.log(result);
+  const handleRemoveVehicle = async (companyId: number) => {
+    setLoadingModalError(false);
+    setLoadingModalVisible(true);
+    const result = await removeVehicle(companyId);
     if (result === true) {
       fetchVehicles();
-    } else {
-      Alert.alert('Ups! Coś poszło nie tak', 'Sprawdź połączenie z internetem');
-    }
+    } else setLoadingModalError(false);
+  };
+
+  const hanldeCloseLoadingModal = () => {
+    setLoadingModalVisible(false);
   };
 
   const renderVehicleItem = ({item}: {item: vehicle}) => (
@@ -117,16 +127,28 @@ export default function VehiclePage() {
         </Pressable>
         <Pressable
           style={{...styles.menuButton, backgroundColor: '#0f3877'}}
-          onPress={() => setCreateModalVisible(true)}>
+          onPress={() => handleAddCompany()}>
           <Text style={styles.menuButtonText}>DODAJ POJAZD</Text>
         </Pressable>
       </View>
-      <FlatList
-        data={vehicles}
-        renderItem={renderVehicleItem}
-        keyExtractor={item => item.id.toString()}
-        contentContainerStyle={styles.vehicleList}
-      />
+      {vehicles !== undefined && (
+        <FlatList
+          data={vehicles}
+          renderItem={renderVehicleItem}
+          keyExtractor={item => item.id.toString()}
+          contentContainerStyle={styles.vehicleList}
+        />
+      )}
+      {vehicles === undefined && (
+        <View style={styles.emptyListContainer}>
+          <Text style={styles.emptyListText}>
+            Wygląda na to, że nic tu nie ma!
+          </Text>
+          <Text style={styles.emptyListText}>
+            Kliknij przycisk na górze, aby dodać pojazd.
+          </Text>
+        </View>
+      )}
 
       <Modal
         visible={isCreateModalVisible}
@@ -136,27 +158,32 @@ export default function VehiclePage() {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>DODAJ NOWY POJAZD</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="NR REJESTRACYJNY"
-              placeholderTextColor="#B0B0B0"
-              value={newRegistrationNumber}
-              onChangeText={setNewRegistrationNumber}
-            />
+
             <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={newVehicleType}
-                onValueChange={itemValue => setNewVehicleType(itemValue)}
-                style={styles.picker}>
-                <Picker.Item label="WYBIERZ RODZAJ POJAZDU" value="" />
-                <Picker.Item label="CIĘŻAROWY" value="CIĘŻAROWY" />
-                <Picker.Item label="BUS" value="BUS" />
-              </Picker>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="NR REJESTRACYJNY"
+                  placeholderTextColor="#B0B0B0"
+                  value={newRegistrationNumber}
+                  onChangeText={setNewRegistrationNumber}
+                />
+              </View>
+              <View style={styles.inputWrapper}>
+                <Picker
+                  selectedValue={newVehicleType}
+                  onValueChange={itemValue => setNewVehicleType(itemValue)}
+                  style={styles.picker}>
+                  <Picker.Item label="WYBIERZ RODZAJ POJAZDU" value="" />
+                  <Picker.Item label="CIĘŻAROWY" value="CIĘŻAROWY" />
+                  <Picker.Item label="BUS" value="BUS" />
+                </Picker>
+              </View>
             </View>
             <View style={styles.modalButtons}>
               <Pressable
                 style={[styles.modalButton, styles.saveButton]}
-                onPress={handleAddVehicle}>
+                onPress={confirmAddVehicle}>
                 <Text style={styles.buttonText}>DODAJ</Text>
               </Pressable>
               <Pressable
@@ -165,6 +192,74 @@ export default function VehiclePage() {
                 <Text style={styles.buttonText}>ANULUJ</Text>
               </Pressable>
             </View>
+          </View>
+        </View>
+      </Modal>
+      {/* Modal Loading*/}
+      <Modal
+        visible={isLoadingModalVisible}
+        transparent={true}
+        animationType="none">
+        <View style={styles.modalContainer}>
+          <View
+            style={{
+              ...styles.modalContent,
+              backgroundColor: 'white',
+              width: '50%',
+              height: '30%',
+            }}>
+            {isLoadingModalError === false && (
+              <View>
+                <Animated.Image
+                  source={require('./assets/icons/loading.png')}
+                  style={{
+                    backgroundColor: 'transparent',
+                    resizeMode: 'contain',
+                    alignSelf: 'center',
+                    height: '70%',
+                    marginBottom: 20,
+                    transform: [{rotate: spin}],
+                  }}></Animated.Image>
+                <Text
+                  style={{
+                    ...styles.modalText,
+                    color: 'black',
+                    textAlign: 'center',
+                    textAlignVertical: 'center',
+                    height: '20%',
+                  }}>
+                  Proszę czekać...
+                </Text>
+              </View>
+            )}
+            {isLoadingModalError === true && (
+              <View>
+                <Image
+                  source={require('./assets/icons/danger.png')}
+                  style={{
+                    backgroundColor: 'transparent',
+                    resizeMode: 'contain',
+                    alignSelf: 'center',
+                    height: '70%',
+                    marginBottom: 10,
+                  }}></Image>
+                <Text
+                  style={{
+                    ...styles.modalText,
+                    color: 'black',
+                    textAlign: 'center',
+                    height: '10%',
+                    marginBottom: 10,
+                  }}>
+                  Ups! Coś poszło nie tak...
+                </Text>
+                <TouchableOpacity
+                  onPress={hanldeCloseLoadingModal}
+                  style={styles.errorModalButton}>
+                  <Text style={styles.errorModalButtonText}>ANULUJ</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
       </Modal>
@@ -185,6 +280,18 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 25,
     borderTopRightRadius: 25,
     padding: 10,
+  },
+  emptyListContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyListText: {
+    color: 'black',
+    fontSize: 20,
+    fontFamily: 'RobotoCondensed-Light',
+    textAlign: 'center',
+    marginBottom: 20,
   },
   vehicleList: {
     padding: 5,
@@ -257,10 +364,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContent: {
-    width: '90%',
     backgroundColor: '#F5EDED',
     borderRadius: 5,
-    padding: 20,
+    justifyContent: 'center',
+    padding: 10,
   },
   modalTitle: {
     color: '#243642',
@@ -276,24 +383,31 @@ const styles = StyleSheet.create({
     marginBottom: 0,
     textAlign: 'left',
   },
-  input: {
-    backgroundColor: '#243642',
-    padding: 10,
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontFamily: 'RobotoCondensed-Regular',
+  inputWrapper: {
+    alignItems: 'center',
+    backgroundColor: '#F5EDED',
+    borderColor: '#0f3877',
+    borderWidth: 2,
+    borderRadius: 25,
     marginBottom: 15,
+    width: '100%',
+    paddingHorizontal: 10,
+  },
+  input: {
+    height: 50,
+    width: '100%',
+    color: '#0f3877',
+    fontSize: 20,
+    fontFamily: 'RobotoCondensed-Light',
   },
   pickerContainer: {
     flexDirection: 'column',
   },
   picker: {
-    color: 'white',
+    width: '100%',
     fontSize: 20,
-    fontFamily: 'RobotoCondensed-Regular',
-    marginBottom: 30,
-    backgroundColor: '#243642',
-    borderRadius: 5,
+    fontFamily: 'RobotoCondensed-Light',
+    backgroundColor: 'transparent',
   },
   modalButtons: {
     flexDirection: 'row',
@@ -301,20 +415,34 @@ const styles = StyleSheet.create({
   },
   modalButton: {
     padding: 10,
-    borderRadius: 5,
+    borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
+    height: 50,
     width: '48%',
+    fontFamily: 'RobotoCondensed-Light',
   },
   cancelButton: {
-    backgroundColor: '#D32F2F',
+    backgroundColor: '#EE4E4E',
   },
   saveButton: {
-    backgroundColor: '#238636',
+    backgroundColor: '#0f3877',
   },
   buttonText: {
     color: '#FFFFFF',
     fontSize: 20,
-    fontFamily: 'RobotoCondensed-Regular',
+    fontFamily: 'RobotoCondensed-Light',
+  },
+  errorModalButton: {
+    width: '100%',
+    height: '10%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#0f3877',
+  },
+  errorModalButtonText: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontFamily: 'RobotoCondensed-Light',
   },
 });

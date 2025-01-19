@@ -6,6 +6,7 @@ import {
   borderModel,
   dropModel,
   startModel,
+  registerModel,
 } from './Interfaces.tsx';
 
 const setToken = async (token: string) => {
@@ -73,331 +74,486 @@ export async function getUser() {
     }
   }
 }
+export async function changePassword(input: string) {
+  const token = await AsyncStorage.getItem('token');
+  const controller = new AbortController();
+
+  setTimeout(() => {
+    controller.abort();
+  }, 3000);
+  try {
+    if (token) {
+      const response = await fetch(
+        `http://192.168.0.101:27270/api/account/changePassword?password=${input}`,
+        {
+          signal: controller.signal,
+          method: 'POST',
+          headers: {
+            accessToken: token,
+          },
+        },
+      );
+      if (response.ok) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  } catch {
+    if (controller.signal.aborted) return false;
+  }
+}
+export async function deleteUser() {
+  const token = await AsyncStorage.getItem('token');
+  const controller = new AbortController();
+
+  setTimeout(() => {
+    controller.abort();
+  }, 3000);
+  try {
+    if (token) {
+      const response = await fetch(
+        `http://192.168.0.101:27270/api/account/delete`,
+        {
+          signal: controller.signal,
+          method: 'POST',
+          headers: {
+            accessToken: token,
+          },
+        },
+      );
+      if (response.ok) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  } catch {
+    if (controller.signal.aborted) return false;
+  }
+}
+export async function register(input: registerModel) {
+  const controller = new AbortController();
+
+  setTimeout(() => {
+    controller.abort();
+  }, 3000);
+  try {
+    const response = await fetch(
+      'http://192.168.0.101:27270/api/account/register',
+      {
+        signal: controller.signal,
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          emailAddress: input.emailAddress,
+          password: input.password,
+          firstName: input.firstName,
+          lastName: input.lastName,
+        }),
+      },
+    );
+
+    if (response.ok) {
+      return true;
+    } else {
+      return false;
+    }
+  } catch {
+    if (controller.signal.aborted) return false;
+  }
+}
 
 //vehicle
 export async function createVehicle(type: string, licensePlate: string) {
   const token = await AsyncStorage.getItem('token');
-  if (token) {
-    const response = await fetch(
-      `http://192.168.0.101:27270/api/vehicle/create?type=${type}&licensePlate=${licensePlate}`,
-      {
-        method: 'POST',
-        headers: {
-          accessToken: token,
+  const controller = new AbortController();
+
+  setTimeout(() => {
+    controller.abort();
+  }, 3000);
+  try {
+    if (token) {
+      const response = await fetch(
+        `http://192.168.0.101:27270/api/vehicle/create?type=${type}&licensePlate=${licensePlate}`,
+        {
+          signal: controller.signal,
+          method: 'POST',
+          headers: {
+            accessToken: token,
+          },
         },
-      },
-    );
-    console.log(response.status);
-    if (response.status === 204) {
-      return true;
-    } else if (response.status === 400) {
-      Alert.alert('Nie można utworzyć pojazdu');
-      return false;
-    } else if (response.status === 401) {
-      return false;
-    } else {
-      Alert.alert('Sprawdź połączenie z internetem');
-      return false;
+      );
+      if (response.ok) {
+        return true;
+      } else {
+        return false;
+      }
     }
-  } else return false;
+  } catch {
+    if (controller.signal.aborted) return false;
+  }
 }
 export async function removeVehicle(id: number) {
   const token = await AsyncStorage.getItem('token');
-  if (token) {
-    const response = await fetch(
-      `http://192.168.0.101:27270/api/vehicle/delete?vehicleId=${id}`,
-      {
-        method: 'POST',
-        headers: {
-          accessToken: token,
+  const controller = new AbortController();
+
+  setTimeout(() => {
+    controller.abort();
+  }, 3000);
+  try {
+    if (token) {
+      const response = await fetch(
+        `http://192.168.0.101:27270/api/vehicle/delete?vehicleId=${id}`,
+        {
+          signal: controller.signal,
+          method: 'POST',
+          headers: {
+            accessToken: token,
+          },
         },
-      },
-    );
-    if (response.status === 204) {
-      return true;
-    } else if (response.status === 400) {
-      return false;
-    } else if (response.status === 401) {
-      return false;
-    } else {
-      return false;
+      );
+      if (response.ok) {
+        return true;
+      } else {
+        return false;
+      }
     }
-  } else return false;
+  } catch {
+    if (controller.signal.aborted) return false;
+  }
 }
 export async function getVehicles() {
+  const controller = new AbortController();
   const token = await AsyncStorage.getItem('token');
-  if (token) {
-    const headers = {accessToken: token};
-    const response = await fetch(
-      `http://192.168.0.101:27270/api/vehicle/getByUser`,
-      {
-        headers,
-      },
-    );
-    if (response.status === 200) {
-      const responseData = await response.json();
-      return responseData || [];
-    } else if (response.status === 204) {
-      Alert.alert('Lista jest pusta');
-      return false;
-    } else if (response.status === 400) {
-      Alert.alert('Nie można pobrać listy pojazdów');
-      return false;
-    } else if (response.status === 401) {
-      return false;
-    } else {
-      Alert.alert('Sprawdź połączenie z internetem');
-      return false;
+
+  setTimeout(() => {
+    controller.abort();
+  }, 3000);
+  try {
+    if (token) {
+      const headers = {accessToken: token};
+      const response = await fetch(
+        `http://192.168.0.101:27270/api/vehicle/getByUser`,
+        {
+          signal: controller.signal,
+          headers,
+        },
+      );
+      if (response.status === 200) {
+        const responseData = await response.json();
+        console.log(responseData);
+        return responseData;
+      } else {
+        return undefined;
+      }
+    } else return undefined;
+  } catch {
+    if (controller.signal.aborted) {
+      return undefined;
     }
-  } else return false;
+  }
 }
 
 //company
 export async function createCompany(name: string, email: string) {
   const token = await AsyncStorage.getItem('token');
-  if (token) {
-    const response = await fetch(
-      `http://192.168.0.101:27270/api/company/create?name=${name}&email=${email}`,
-      {
-        method: 'POST',
-        headers: {
-          accessToken: token,
+  const controller = new AbortController();
+
+  setTimeout(() => {
+    controller.abort();
+  }, 3000);
+  try {
+    if (token) {
+      const response = await fetch(
+        `http://192.168.0.101:27270/api/company/create?name=${name}&email=${email}`,
+        {
+          signal: controller.signal,
+          method: 'POST',
+          headers: {
+            accessToken: token,
+          },
         },
-      },
-    );
-    console.log(response.status);
-    if (response.status === 204) {
-      return true;
-    } else if (response.status === 400) {
-      Alert.alert('Nie można utworzyć firmy');
-      return false;
-    } else if (response.status === 401) {
-      return false;
-    } else {
-      Alert.alert('Sprawdź połączenie z internetem');
-      return false;
+      );
+      if (response.ok) {
+        return true;
+      } else {
+        return false;
+      }
     }
-  } else return false;
+  } catch {
+    if (controller.signal.aborted) return false;
+  }
 }
 export async function removeCompany(id: number) {
   const token = await AsyncStorage.getItem('token');
-  if (token) {
-    const response = await fetch(
-      `http://192.168.0.101:27270/api/company/delete?companyId=${id}`,
-      {
-        method: 'POST',
-        headers: {
-          accessToken: token,
+  const controller = new AbortController();
+
+  setTimeout(() => {
+    controller.abort();
+  }, 3000);
+  try {
+    if (token) {
+      const response = await fetch(
+        `http://192.168.0.101:27270/api/company/delete?companyId=${id}`,
+        {
+          signal: controller.signal,
+          method: 'POST',
+          headers: {
+            accessToken: token,
+          },
         },
-      },
-    );
-    if (response.status === 204) {
-      return true;
-    } else if (response.status === 400) {
-      Alert.alert('Nie można usunąć firmy');
-      return false;
-    } else if (response.status === 401) {
-      return false;
-    } else {
-      Alert.alert('Sprawdź połączenie z internetem');
-      return false;
+      );
+      if (response.ok) {
+        return true;
+      } else {
+        return false;
+      }
     }
-  } else return false;
+  } catch {
+    if (controller.signal.aborted) return false;
+  }
 }
 export async function getCompanies() {
+  const controller = new AbortController();
   const token = await AsyncStorage.getItem('token');
-  if (token) {
-    const headers = {accessToken: token};
-    const response = await fetch(
-      `http://192.168.0.101:27270/api/company/getByUser`,
-      {
-        headers,
-      },
-    );
-    if (response.status === 200) {
-      const responseData = await response.json();
-      return responseData || [];
-    } else if (response.status === 400) {
-      Alert.alert('Nie można pobrać listy firm');
-      return false;
-    } else if (response.status === 401) {
-      return false;
-    } else {
-      Alert.alert('Sprawdź połączenie z internetem');
-      return false;
+
+  setTimeout(() => {
+    controller.abort();
+  }, 3000);
+  try {
+    if (token) {
+      const headers = {accessToken: token};
+      const response = await fetch(
+        `http://192.168.0.101:27270/api/company/getByUser`,
+        {
+          signal: controller.signal,
+          headers,
+        },
+      );
+      if (response.status === 200) {
+        const responseData = await response.json();
+        return responseData;
+      } else {
+        return undefined;
+      }
+    } else return undefined;
+  } catch {
+    if (controller.signal.aborted) {
+      return undefined;
     }
-  } else return false;
+  }
 }
 
 //route
 export async function newRoute(input: startModel) {
   const token = await AsyncStorage.getItem('token');
+  const controller = new AbortController();
 
-  if (token) {
-    const response = await fetch('http://192.168.0.101:27270/api/route/start', {
+  setTimeout(() => {
+    controller.abort();
+  }, 3000);
+
+  try {
+    if (token) {
+      const response = await fetch(
+        'http://192.168.0.101:27270/api/route/start',
+        {
+          signal: controller.signal,
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            accessToken: token,
+          },
+          body: JSON.stringify({
+            vehicleId: input.vehicleId,
+            companyId: input.companyId,
+            latitude: input.latitude,
+            longitude: input.longitude,
+            country: input.country,
+          }),
+        },
+      );
+
+      if (response.ok) {
+        return true;
+      } else {
+        return false;
+      }
+    } else return false;
+  } catch {
+    if (controller.signal.aborted) return false;
+  }
+}
+export async function finishRoute(input: number) {
+  const token = await AsyncStorage.getItem('token');
+  const controller = new AbortController();
+
+  setTimeout(() => {
+    controller.abort();
+  }, 3000);
+  try {
+    if (token) {
+      const response = await fetch(
+        `http://192.168.0.101:27270/api/route/finish?routeId=${input}`,
+        {
+          signal: controller.signal,
+          method: 'POST',
+          headers: {
+            accessToken: token,
+          },
+        },
+      );
+      if (response.ok) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  } catch {
+    if (controller.signal.aborted) return false;
+  }
+}
+export async function newPickup(input: pickupModel) {
+  const controller = new AbortController();
+
+  setTimeout(() => {
+    controller.abort();
+  }, 3000);
+  try {
+    const response = await fetch(
+      'http://192.168.0.101:27270/api/pickup/create',
+      {
+        signal: controller.signal,
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          latitude: input.latitude,
+          longitude: input.longitude,
+          routeId: input.routeId,
+          pickupCount: input.pickupCount,
+          pickupWeight: input.pickupWeight,
+          pickupComment: input.pickupComment,
+        }),
+      },
+    );
+
+    if (response.ok) {
+      return true;
+    } else {
+      return false;
+    }
+  } catch {
+    if (controller.signal.aborted) return false;
+  }
+}
+export async function newRefuel(input: refuelModel) {
+  const controller = new AbortController();
+
+  setTimeout(() => {
+    controller.abort();
+  }, 3000);
+  try {
+    const response = await fetch(
+      'http://192.168.0.101:27270/api/refuel/create',
+      {
+        signal: controller.signal,
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          latitude: input.latitude,
+          longitude: input.longitude,
+          routeId: input.routeId,
+          refuelCount: input.refuelCount,
+          refuelTotal: input.refuelTotal,
+          refuelCurrency: input.refuelCurrency,
+          refuelType: input.refuelType,
+        }),
+      },
+    );
+
+    if (response.ok) {
+      return true;
+    } else {
+      return false;
+    }
+  } catch {
+    if (controller.signal.aborted) return false;
+  }
+}
+export async function newBorder(input: borderModel) {
+  const controller = new AbortController();
+
+  setTimeout(() => {
+    controller.abort();
+  }, 3000);
+  try {
+    const response = await fetch(
+      'http://192.168.0.101:27270/api/border/create',
+      {
+        signal: controller.signal,
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          latitude: input.latitude,
+          longitude: input.longitude,
+          routeId: input.routeId,
+          borderFrom: input.borderFrom,
+          borderTo: input.borderTo,
+        }),
+      },
+    );
+
+    if (response.ok) {
+      return true;
+    } else {
+      return false;
+    }
+  } catch {
+    if (controller.signal.aborted) return false;
+  }
+}
+export async function drop(input: dropModel) {
+  const controller = new AbortController();
+
+  setTimeout(() => {
+    controller.abort();
+  }, 3000);
+  try {
+    const response = await fetch('http://192.168.0.101:27270/api/pickup/drop', {
+      signal: controller.signal,
       method: 'POST',
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
-        accessToken: token,
       },
       body: JSON.stringify({
-        vehicleId: input.vehicleId,
-        companyId: input.companyId,
-        latitude: input.latitude,
-        longitude: input.longitude,
-        country: input.country,
+        eventId: input.eventId,
+        dropLatitude: input.dropLatitude,
+        dropLongitude: input.dropLongitude,
       }),
     });
 
-    if (response.status === 204) {
+    if (response.ok) {
       return true;
-    } else if (response.status === 400) {
-      Alert.alert('Nie można utworzyć trasy');
-      return false;
-    } else if (response.status === 401) {
-      return false;
     } else {
-      Alert.alert('Sprawdź połączenie z internetem');
       return false;
     }
-  } else return false;
-}
-export async function finishRoute(input: number) {
-  const token = await AsyncStorage.getItem('token');
-  if (token) {
-    const response = await fetch(
-      `http://192.168.0.101:27270/api/route/finish?routeId=${input}`,
-      {
-        method: 'POST',
-        headers: {
-          accessToken: token,
-        },
-      },
-    );
-    if (response.status === 200) {
-      return true;
-    } else if (response.status === 400) {
-      Alert.alert('Nie można zakończyć trasy');
-      return false;
-    } else if (response.status === 401) {
-      return false;
-    } else {
-      Alert.alert('Sprawdź połączenie z internetem');
-      return false;
-    }
-  } else return false;
-}
-export async function newPickup(input: pickupModel) {
-  const response = await fetch('http://192.168.0.101:27270/api/pickup/create', {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      latitude: input.latitude,
-      longitude: input.longitude,
-      routeId: input.routeId,
-      pickupCount: input.pickupCount,
-      pickupWeight: input.pickupWeight,
-      pickupComment: input.pickupComment,
-    }),
-  });
-
-  if (response.status === 204) {
-    return true;
-  } else if (response.status === 400) {
-    Alert.alert('Nie można utworzyć zdarzenia');
-    return false;
-  } else if (response.status === 401) {
-    return false;
-  } else {
-    Alert.alert('Sprawdź połączenie z internetem');
-    return false;
-  }
-}
-export async function newRefuel(input: refuelModel) {
-  const response = await fetch('http://192.168.0.101:27270/api/refuel/create', {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      latitude: input.latitude,
-      longitude: input.longitude,
-      routeId: input.routeId,
-      refuelCount: input.refuelCount,
-      refuelTotal: input.refuelTotal,
-      refuelCurrency: input.refuelCurrency,
-      refuelType: input.refuelType,
-    }),
-  });
-
-  if (response.status === 204) {
-    return true;
-  } else if (response.status === 400) {
-    Alert.alert('Nie można utworzyć zdarzenia');
-    return false;
-  } else if (response.status === 401) {
-    return false;
-  } else {
-    Alert.alert('Sprawdź połączenie z internetem');
-    return false;
-  }
-}
-export async function newBorder(input: borderModel) {
-  const response = await fetch('http://192.168.0.101:27270/api/border/create', {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      latitude: input.latitude,
-      longitude: input.longitude,
-      routeId: input.routeId,
-      borderFrom: input.borderFrom,
-      borderTo: input.borderTo,
-    }),
-  });
-
-  if (response.status === 204) {
-    return true;
-  } else if (response.status === 400) {
-    Alert.alert('Nie można utworzyć zdarzenia');
-    return false;
-  } else if (response.status === 401) {
-    return false;
-  } else {
-    Alert.alert('Sprawdź połączenie z internetem');
-    return false;
-  }
-}
-export async function drop(input: dropModel) {
-  const response = await fetch('http://192.168.0.101:27270/api/pickup/drop', {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      eventId: input.eventId,
-      dropLatitude: input.dropLatitude,
-      dropLongitude: input.dropLongitude,
-    }),
-  });
-  if (response.status === 200) {
-    return true;
-  } else if (response.status === 400) {
-    Alert.alert('Nie można utworzyć zdarzenia');
-    return false;
-  } else if (response.status === 401) {
-    return false;
-  } else {
-    Alert.alert('Sprawdź połączenie z internetem');
-    return false;
+  } catch {
+    if (controller.signal.aborted) return false;
   }
 }
 export async function getRoute() {
@@ -421,13 +577,11 @@ export async function getRoute() {
       if (response.status === 200) {
         const responseData = await response.json();
         return responseData;
-      } else if (response.status === 204) {
-        return undefined;
       } else {
-        return false;
+        return undefined;
       }
-    } else return false;
+    } else return undefined;
   } catch {
-    if (controller.signal.aborted) return false;
+    if (controller.signal.aborted) return undefined;
   }
 }

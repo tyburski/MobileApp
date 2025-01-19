@@ -14,10 +14,11 @@ import {
   Easing,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
-import {login, getUser} from './ApiController';
+import {login, getUser, register} from './ApiController';
 import {RootStackParamList} from './types';
 import {StackNavigationProp} from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {registerModel} from './Interfaces.tsx';
 
 const {width, height} = Dimensions.get('window');
 
@@ -82,16 +83,22 @@ export default function Login() {
       duration: 300,
       useNativeDriver: true,
     }).start();
+    setName('');
+    setSurname('');
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
 
     setIsRegistering(!isRegistering);
   };
 
   const handleLoginClick = async () => {
+    if (email === '' || password === '') {
+      Alert.alert('', 'Wszystkie pola muszą być wypełnione.');
+      return;
+    }
     setLoadingModalError(false);
     setLoadingModalVisible(true);
-    if (email === '' || password === '') {
-      setLoadingModalError(true);
-    }
     const success = await login(email, password);
     console.log(success);
     if (success) {
@@ -112,15 +119,38 @@ export default function Login() {
     } else setLoadingModalError(true);
   };
 
-  const handleRegisterClick = () => {
+  const handleRegisterClick = async () => {
     if (name && surname && email && password && confirmPassword) {
       if (password === confirmPassword) {
-        navigation.replace('Menu');
+        setLoadingModalError(false);
+        setLoadingModalVisible(true);
+        const model: registerModel = {
+          emailAddress: email,
+          password: password,
+          firstName: name,
+          lastName: surname,
+        };
+        const response = await register(model);
+        if (response === true) {
+          setLoadingModalVisible(false);
+          Alert.alert('', 'Konto zostało utworzone.\nZostaniesz zalogowany.', [
+            {
+              onPress: () => {
+                handleLoginClick();
+              },
+            },
+          ]);
+          setEmail('');
+          setPassword('');
+          setConfirmPassword('');
+          setName('');
+          setSurname('');
+        } else setLoadingModalError(true);
       } else {
-        Alert.alert('Błąd', 'Hasła się nie zgadzają');
+        Alert.alert('', 'Wprowadzone hasła nie są takie same.');
       }
     } else {
-      Alert.alert('Błąd', 'Wszystkie pola muszą być wypełnione');
+      Alert.alert('', 'Wszystkie pola muszą być wypełnione.');
     }
   };
 

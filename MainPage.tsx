@@ -12,6 +12,7 @@ import {
   Button,
   TouchableOpacity,
   Dimensions,
+  Alert,
 } from 'react-native';
 import {Picker} from '@react-native-picker/picker';
 import {useState, useRef} from 'react';
@@ -52,7 +53,7 @@ export default function Main() {
   //Modale
   const [isStartModalVisible, setStartModalVisible] = useState(false);
   const [isRefuelModalVisible, setRefuelModalVisible] = useState(false);
-  const [isErrorModalVisible, setErrorModalVisible] = useState(false);
+  const [isFinishModalVisible, setFinishModalVisible] = useState(false);
   const [isPickupModalVisible, setPickupModalVisible] = useState(false);
   const [isBorderModalVisible, setBorderModalVisible] = useState(false);
   const [isLoadingModalVisible, setLoadingModalVisible] = useState(false);
@@ -113,10 +114,30 @@ export default function Main() {
 
   //pobieranie danych
   const getvehicles = async () => {
-    setVehicles(await apiController.getVehicles());
+    setLoadingModalError(false);
+    setLoadingModalVisible(true);
+    const response = await apiController.getVehicles();
+    if (response !== undefined) {
+      setVehicles(response);
+      setLoadingModalVisible(false);
+      return true;
+    } else {
+      setLoadingModalError(true);
+      return false;
+    }
   };
   const getcompanies = async () => {
-    setCompanies(await apiController.getCompanies());
+    setLoadingModalError(false);
+    setLoadingModalVisible(true);
+    const response = await apiController.getCompanies();
+    if (response !== undefined) {
+      setCompanies(response);
+      setLoadingModalVisible(false);
+      return true;
+    } else {
+      setLoadingModalError(true);
+      return false;
+    }
   };
   const getRoute = async () => {
     const route = await apiController.getRoute();
@@ -127,7 +148,7 @@ export default function Main() {
     } else if (route === undefined) {
       setLoadingModalVisible(false);
       setRoute(undefined);
-    } else setLoadingModalError(true);
+    }
   };
   const getBorders = (input: string) => {
     const res = getNeighbors(input);
@@ -136,53 +157,64 @@ export default function Main() {
 
   //przyciski
   const startRouteClick = async () => {
+    if (selectedCompany === undefined || selectedVehicle === undefined) {
+      Alert.alert('', 'Wszystkie pola są wymagane.');
+      return;
+    }
     setStartModalVisible(false);
+    setLoadingModalError(false);
     setLoadingModalVisible(true);
     const position = await Geofencing.getCurrentLocation();
-    if (selectedVehicle !== undefined || selectedCompany !== undefined) {
-      const start: startModel = {
-        vehicleId: selectedVehicle?.id,
-        companyId: selectedCompany?.id,
-        latitude: position.latitude,
-        longitude: position.longitude,
-        country: position.isoCountryCode,
-      };
-      const result = await apiController.newRoute(start);
-      if (result === true) {
-        getRoute();
-      } else setLoadingModalVisible(false);
-    }
+    const start: startModel = {
+      vehicleId: selectedVehicle?.id,
+      companyId: selectedCompany?.id,
+      latitude: position.latitude,
+      longitude: position.longitude,
+      country: position.isoCountryCode,
+    };
+    const result = await apiController.newRoute(start);
+    if (result === true) {
+      setLoadingModalVisible(false);
+      playSound();
+      getRoute();
+    } else setLoadingModalError(true);
   };
   const finishRoute = async () => {
+    setFinishModalVisible(false);
     if (route !== undefined) {
+      setLoadingModalError(false);
       setLoadingModalVisible(true);
       const id = route.id;
       const response = await apiController.finishRoute(id);
 
       if (response === true) {
+        playSound();
         getRoute();
-      }
-      setLoadingModalVisible(false);
+      } else setLoadingModalError(true);
     }
   };
   const handleStartClick = async () => {
-    getvehicles();
-    getcompanies();
-    setStartModalVisible(true);
+    const v = await getvehicles();
+    const c = await getcompanies();
+    console.log(vehicles.length);
+    console.log(companies.length);
+    if (v === true && c === true) {
+      setStartModalVisible(true);
+    } else Alert.alert('', 'Najpierw utwórz firmę i pojazd');
+  };
+  const handleFinishClick = async () => {
+    setFinishModalVisible(true);
   };
 
   const handleRefuelClick = () => {
-    if (route === undefined) {
-      setErrorModalVisible(true);
-    } else {
-      setRefuelModalVisible(true);
-    }
+    setRefuelModalVisible(true);
   };
   const confirmRefuelClick = async () => {
     const position = await Geofencing.getCurrentLocation();
 
     if (route !== undefined) {
       setRefuelModalVisible(false);
+      setLoadingModalError(false);
       setLoadingModalVisible(true);
 
       const refuel: refuelModel = {
@@ -198,22 +230,20 @@ export default function Main() {
 
       if (res1 === true) {
         playSound();
+        setLoadingModalVisible(false);
         getRoute();
-      } else setLoadingModalVisible(false);
+      } else setLoadingModalError(true);
     }
   };
   const handlePickupClick = () => {
-    if (route === undefined) {
-      setErrorModalVisible(true);
-    } else {
-      setPickupModalVisible(true);
-    }
+    setPickupModalVisible(true);
   };
   const confirmPickupClick = async () => {
     const position = await Geofencing.getCurrentLocation();
 
     if (route !== undefined) {
       setPickupModalVisible(false);
+      setLoadingModalError(false);
       setLoadingModalVisible(true);
 
       const pickup: pickupModel = {
@@ -228,11 +258,13 @@ export default function Main() {
 
       if (res1 === true) {
         playSound();
+        setLoadingModalVisible(false);
         getRoute();
-      } else setLoadingModalVisible(false);
+      } else setLoadingModalError(true);
     }
   };
   const handleDropClick = async (event: routeEvent) => {
+    setLoadingModalError(false);
     setLoadingModalVisible(true);
     const position = await Geofencing.getCurrentLocation();
     const drop: dropModel = {
@@ -242,16 +274,18 @@ export default function Main() {
     };
     const result = await apiController.drop(drop);
     if (result === true) {
+      setLoadingModalVisible(false);
       getRoute();
-    } else setLoadingModalVisible(false);
+    } else setLoadingModalError(true);
   };
   const handleBorderClick = () => {
-    if (route === undefined) {
-      setErrorModalVisible(true);
-    } else {
+    setLoadingModalError(false);
+    setLoadingModalVisible(true);
+    if (route !== undefined) {
       getBorders(route.currentCountry);
+      setLoadingModalVisible(false);
       setBorderModalVisible(true);
-    }
+    } else setLoadingModalError(true);
   };
   const confirmBorderClick = async (input: string) => {
     const position = await Geofencing.getCurrentLocation();
@@ -259,6 +293,7 @@ export default function Main() {
     if (route !== undefined) {
       setBorders([]);
       setBorderModalVisible(false);
+      setLoadingModalError(false);
       setLoadingModalVisible(true);
 
       const border: borderModel = {
@@ -272,8 +307,9 @@ export default function Main() {
 
       if (response === true) {
         playSound();
+        setLoadingModalVisible(false);
         getRoute();
-      } else setLoadingModalVisible(false);
+      } else setLoadingModalError(true);
     }
   };
 
@@ -415,7 +451,7 @@ export default function Main() {
               backgroundColor: '#EE4E4E',
               marginBottom: 20,
             }}
-            onPress={() => finishRoute()}>
+            onPress={() => handleFinishClick()}>
             <Text style={styles.menuButtonText}>ZAKOŃCZ TRASĘ</Text>
           </TouchableOpacity>
         )}
@@ -486,7 +522,7 @@ export default function Main() {
       <Modal
         visible={isStartModalVisible}
         transparent={true}
-        animationType="slide"
+        animationType="none"
         onRequestClose={() => setStartModalVisible(false)}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -695,31 +731,43 @@ export default function Main() {
           </View>
         </View>
       </Modal>
-      {/* Modal Error*/}
+
+      {/* Modal finish*/}
       <Modal
-        visible={isErrorModalVisible}
+        visible={isFinishModalVisible}
         transparent={true}
-        animationType="slide"
-        onRequestClose={() => setErrorModalVisible(false)}>
+        animationType="none"
+        onRequestClose={() => setFinishModalVisible(false)}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>UPS! COŚ JEST NIE TAK</Text>
+            <Text style={styles.modalTitle}>KONIEC TRASY</Text>
 
             <View style={styles.pickerContainer}>
-              <Text style={styles.modalErrorText}>
-                NAJPIERW MUSISZ ROZPOCZĄĆ TRASĘ!
+              <Text
+                style={{
+                  ...styles.modalText,
+                  marginBottom: 20,
+                  textAlign: 'center',
+                }}>
+                Czy chcesz zakończyć trasę?
               </Text>
             </View>
             <View style={styles.modalButtons}>
               <Pressable
-                style={[styles.modalErrorButton, styles.saveButton]}
-                onPress={() => setErrorModalVisible(false)}>
-                <Text style={styles.buttonText}>OK</Text>
+                style={[styles.modalButton, styles.saveButton]}
+                onPress={() => finishRoute()}>
+                <Text style={styles.buttonText}>AKCEPTUJ</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => setFinishModalVisible(false)}>
+                <Text style={styles.buttonText}>ANULUJ</Text>
               </Pressable>
             </View>
           </View>
         </View>
       </Modal>
+
       {/* Modal Loading*/}
       <Modal
         visible={isLoadingModalVisible}
