@@ -14,27 +14,63 @@ const setToken = async (token: string) => {
 
 //account
 export async function login(username: string, password: string) {
-  const response = await fetch(
-    `http://192.168.0.101:27270/api/account/login?username=${username}&password=${password}`,
-    {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-    },
-  );
+  const controller = new AbortController();
 
-  if (response.status === 401) {
-    Alert.alert('Błędne dane logowania');
-    return false;
-  } else if (response.status === 200) {
-    const responseData = await response.json();
-    await setToken(responseData);
-    return true;
-  } else {
-    Alert.alert('Sprawdź połączenie z internetem');
-    return false;
+  setTimeout(() => {
+    controller.abort();
+  }, 3000);
+
+  try {
+    const response = await fetch(
+      `http://192.168.0.101:27270/api/account/login?username=${username}&password=${password}`,
+      {
+        signal: controller.signal,
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+
+    if (response.ok) {
+      const responseData = await response.json();
+      await setToken(responseData);
+      return true;
+    } else {
+      return false;
+    }
+  } catch {
+    if (controller.signal.aborted) return false;
+  }
+}
+export async function getUser() {
+  const controller = new AbortController();
+
+  setTimeout(() => {
+    controller.abort();
+  }, 3000);
+
+  const token = await AsyncStorage.getItem('token');
+
+  if (token) {
+    try {
+      const headers = {accessToken: token};
+      const response = await fetch(
+        `http://192.168.0.101:27270/api/account/getUser`,
+        {
+          headers,
+        },
+      );
+      if (response.ok) {
+        const responseData = await response.json();
+        return responseData;
+      } else {
+        return false;
+      }
+    } catch {
+      if (controller.signal.aborted) return false;
+    }
   }
 }
 
@@ -80,12 +116,10 @@ export async function removeVehicle(id: number) {
     if (response.status === 204) {
       return true;
     } else if (response.status === 400) {
-      Alert.alert('Nie można usunąć pojazdu');
       return false;
     } else if (response.status === 401) {
       return false;
     } else {
-      Alert.alert('Sprawdź połączenie z internetem');
       return false;
     }
   } else return false;
@@ -216,7 +250,6 @@ export async function newRoute(input: startModel) {
       }),
     });
 
-    console.log(response.status);
     if (response.status === 204) {
       return true;
     } else if (response.status === 400) {
@@ -368,25 +401,33 @@ export async function drop(input: dropModel) {
   }
 }
 export async function getRoute() {
+  const controller = new AbortController();
   const token = await AsyncStorage.getItem('token');
-  if (token) {
-    const headers = {accessToken: token};
-    const response = await fetch(
-      `http://192.168.0.101:27270/api/route/getStarted`,
-      {
-        headers,
-      },
-    );
-    if (response.status === 200) {
-      const responseData = await response.json();
-      return responseData;
-    } else if (response.status === 204) {
-      return false;
-    } else if (response.status === 401) {
-      return false;
-    } else {
-      Alert.alert('Sprawdź połączenie z internetem');
-      return false;
-    }
-  } else return false;
+
+  setTimeout(() => {
+    controller.abort();
+  }, 3000);
+
+  try {
+    if (token) {
+      const headers = {accessToken: token};
+      const response = await fetch(
+        `http://192.168.0.101:27270/api/route/getStarted`,
+        {
+          signal: controller.signal,
+          headers,
+        },
+      );
+      if (response.status === 200) {
+        const responseData = await response.json();
+        return responseData;
+      } else if (response.status === 204) {
+        return undefined;
+      } else {
+        return false;
+      }
+    } else return false;
+  } catch {
+    if (controller.signal.aborted) return false;
+  }
 }

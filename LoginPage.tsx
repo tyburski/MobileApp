@@ -10,11 +10,14 @@ import {
   Animated,
   Dimensions,
   Keyboard,
+  Modal,
+  Easing,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
-import {login} from './ApiController';
+import {login, getUser} from './ApiController';
 import {RootStackParamList} from './types';
 import {StackNavigationProp} from '@react-navigation/stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const {width, height} = Dimensions.get('window');
 
@@ -28,6 +31,22 @@ export default function Login() {
   const [isRegistering, setIsRegistering] = useState(false);
   const slideAnim = useRef(new Animated.Value(0)).current;
   const slideAnimHeader = useRef(new Animated.Value(0)).current;
+  const [isLoadingModalVisible, setLoadingModalVisible] = useState(false);
+  const [isLoadingModalError, setLoadingModalError] = useState(false);
+  const spinValue = new Animated.Value(0);
+
+  const spin = spinValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+  Animated.loop(
+    Animated.timing(spinValue, {
+      toValue: 1,
+      duration: 1000,
+      easing: Easing.linear,
+      useNativeDriver: true,
+    }),
+  ).start();
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -68,8 +87,29 @@ export default function Login() {
   };
 
   const handleLoginClick = async () => {
+    setLoadingModalError(false);
+    setLoadingModalVisible(true);
+    if (email === '' || password === '') {
+      setLoadingModalError(true);
+    }
     const success = await login(email, password);
-    if (success) navigation.replace('Menu');
+    console.log(success);
+    if (success) {
+      const user = await getUser();
+      if (user !== null) {
+        await AsyncStorage.setItem(
+          'userName',
+          `${user.firstName} ${user.lastName}`,
+        );
+        setEmail('');
+        setPassword('');
+        setTimeout(() => {
+          setLoadingModalVisible(false);
+        }, 2000);
+        setLoadingModalVisible(false);
+        navigation.replace('Menu');
+      } else setLoadingModalError(true);
+    } else setLoadingModalError(true);
   };
 
   const handleRegisterClick = () => {
@@ -82,6 +122,10 @@ export default function Login() {
     } else {
       Alert.alert('Błąd', 'Wszystkie pola muszą być wypełnione');
     }
+  };
+
+  const hanldeCloseLoadingModal = () => {
+    setLoadingModalVisible(false);
   };
 
   return (
@@ -222,6 +266,73 @@ export default function Login() {
           </Animated.View>
         </Animated.View>
       </Animated.View>
+      <Modal
+        visible={isLoadingModalVisible}
+        transparent={true}
+        animationType="none">
+        <View style={styles.modalContainer}>
+          <View
+            style={{
+              ...styles.modalContent,
+              backgroundColor: 'white',
+              width: '50%',
+              height: '30%',
+            }}>
+            {isLoadingModalError === false && (
+              <View>
+                <Animated.Image
+                  source={require('./assets/icons/loading.png')}
+                  style={{
+                    backgroundColor: 'transparent',
+                    resizeMode: 'contain',
+                    alignSelf: 'center',
+                    height: '70%',
+                    marginBottom: 20,
+                    transform: [{rotate: spin}],
+                  }}></Animated.Image>
+                <Text
+                  style={{
+                    ...styles.modalText,
+                    color: 'black',
+                    textAlign: 'center',
+                    textAlignVertical: 'center',
+                    height: '20%',
+                  }}>
+                  Proszę czekać...
+                </Text>
+              </View>
+            )}
+            {isLoadingModalError === true && (
+              <View>
+                <Image
+                  source={require('./assets/icons/danger.png')}
+                  style={{
+                    backgroundColor: 'transparent',
+                    resizeMode: 'contain',
+                    alignSelf: 'center',
+                    height: '70%',
+                    marginBottom: 10,
+                  }}></Image>
+                <Text
+                  style={{
+                    ...styles.modalText,
+                    color: 'black',
+                    textAlign: 'center',
+                    height: '10%',
+                    marginBottom: 10,
+                  }}>
+                  Ups! Coś poszło nie tak...
+                </Text>
+                <TouchableOpacity
+                  onPress={hanldeCloseLoadingModal}
+                  style={styles.errorModalButton}>
+                  <Text style={styles.errorModalButtonText}>ANULUJ</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -256,7 +367,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5EDED',
     borderColor: '#0f3877',
     borderWidth: 2,
-    borderRadius: 2,
+    borderRadius: 25,
     marginBottom: 15,
     width: '100%',
     paddingHorizontal: 10,
@@ -269,7 +380,7 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 60,
-    width: '100%',
+    width: '90%',
     color: '#0f3877',
     fontSize: 30,
     fontFamily: 'RobotoCondensed-Light',
@@ -277,11 +388,11 @@ const styles = StyleSheet.create({
   button: {
     width: '100%',
     height: 60,
-    marginTop: 20,
+    marginTop: 15,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#0f3877',
-    borderRadius: 2,
+    borderRadius: 25,
   },
   buttonAlt: {
     width: '100%',
@@ -289,8 +400,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#0f3877',
-    borderRadius: 2,
-    marginTop: 20,
+    borderRadius: 25,
+    marginTop: 15,
   },
   buttonText: {
     color: '#FFFFFF',
@@ -327,5 +438,36 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: 20,
     marginTop: 100,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContent: {
+    backgroundColor: '#F5EDED',
+    justifyContent: 'center',
+    borderRadius: 5,
+    padding: 10,
+  },
+  modalText: {
+    color: '#243642',
+    fontSize: 20,
+    fontFamily: 'RobotoCondensed-Regular',
+    marginBottom: 0,
+    textAlign: 'left',
+  },
+  errorModalButton: {
+    width: '100%',
+    height: '10%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#0f3877',
+  },
+  errorModalButtonText: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontFamily: 'RobotoCondensed-Light',
   },
 });

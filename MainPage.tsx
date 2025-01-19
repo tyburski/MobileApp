@@ -9,6 +9,9 @@ import {
   Easing,
   TextInput,
   Modal,
+  Button,
+  TouchableOpacity,
+  Dimensions,
 } from 'react-native';
 import {Picker} from '@react-native-picker/picker';
 import {useState, useRef} from 'react';
@@ -34,10 +37,12 @@ import {RootStackParamList} from './types';
 import {NavigationProp} from '@react-navigation/native';
 import Moment from 'moment';
 
+const {width, height} = Dimensions.get('window');
+
 export default function Main() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
-  const [route, setRoute] = useState<route>();
+  const [route, setRoute] = useState<route | undefined>();
   const [routeEvents, setRouteEvents] = useState<routeEvent[]>([]);
   const [borders, setBorders] = useState<string[] | undefined>([]);
   const [vehicles, setVehicles] = useState<vehicle[]>([]);
@@ -51,6 +56,7 @@ export default function Main() {
   const [isPickupModalVisible, setPickupModalVisible] = useState(false);
   const [isBorderModalVisible, setBorderModalVisible] = useState(false);
   const [isLoadingModalVisible, setLoadingModalVisible] = useState(false);
+  const [isLoadingModalError, setLoadingModalError] = useState(true);
 
   //tankowanie
   const [refuelCount, setRefuelCount] = useState('');
@@ -81,37 +87,6 @@ export default function Main() {
   };
 
   //animacje
-  const [progress, setProgress] = useState(new Animated.Value(0));
-  const timerRef = useRef<ReturnType<typeof setTimeout> | number>(0);
-
-  const handleStartPress = () => {
-    Animated.timing(progress, {
-      toValue: 1,
-      duration: 2000,
-      easing: Easing.linear,
-      useNativeDriver: true,
-    }).start();
-
-    timerRef.current = setTimeout(() => {
-      handleStartStopClick();
-      handleEndPress();
-    }, 2000);
-  };
-  const handleEndPress = () => {
-    clearTimeout(timerRef.current);
-
-    setProgress(new Animated.Value(0));
-    Animated.timing(progress, {
-      toValue: 0,
-      duration: 0,
-      easing: Easing.linear,
-      useNativeDriver: true,
-    }).start();
-  };
-  const progressInterpolation = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 1],
-  });
 
   const spinValue = new Animated.Value(0);
   const spin = spinValue.interpolate({
@@ -130,6 +105,7 @@ export default function Main() {
   const isFocused = useIsFocused();
   useEffect(() => {
     if (isFocused) {
+      setLoadingModalError(false);
       setLoadingModalVisible(true);
       getRoute();
     }
@@ -144,12 +120,14 @@ export default function Main() {
   };
   const getRoute = async () => {
     const route = await apiController.getRoute();
-    if (route !== false) {
-      setButtonState({text: 'STOP', color: '#D32F2F'});
+    if (route !== undefined) {
       setRoute(route);
       setRouteEvents(route.routeEvents.reverse());
-    }
-    setLoadingModalVisible(false);
+      setLoadingModalVisible(false);
+    } else if (route === undefined) {
+      setLoadingModalVisible(false);
+      setRoute(undefined);
+    } else setLoadingModalError(true);
   };
   const getBorders = (input: string) => {
     const res = getNeighbors(input);
@@ -157,7 +135,7 @@ export default function Main() {
   };
 
   //przyciski
-  const startRoute = async () => {
+  const startRouteClick = async () => {
     setStartModalVisible(false);
     setLoadingModalVisible(true);
     const position = await Geofencing.getCurrentLocation();
@@ -182,30 +160,21 @@ export default function Main() {
       const response = await apiController.finishRoute(id);
 
       if (response === true) {
-        setButtonState({text: 'START', color: '#243642'});
-        setRouteEvents([]);
+        getRoute();
       }
       setLoadingModalVisible(false);
     }
   };
-  const handleStartStopClick = async () => {
-    if (buttonState.text === 'START') {
-      playSound();
-      getvehicles();
-      getcompanies();
-      setStartModalVisible(true);
-    } else if (buttonState.text === 'STOP') {
-      await finishRoute();
-      playSound();
-    }
+  const handleStartClick = async () => {
+    getvehicles();
+    getcompanies();
+    setStartModalVisible(true);
   };
-  const startRouteClick = () => {
-    startRoute();
-  };
+
   const handleRefuelClick = () => {
-    if (buttonState.text === 'START') {
+    if (route === undefined) {
       setErrorModalVisible(true);
-    } else if (buttonState.text === 'STOP') {
+    } else {
       setRefuelModalVisible(true);
     }
   };
@@ -234,9 +203,9 @@ export default function Main() {
     }
   };
   const handlePickupClick = () => {
-    if (buttonState.text === 'START') {
+    if (route === undefined) {
       setErrorModalVisible(true);
-    } else if (buttonState.text === 'STOP') {
+    } else {
       setPickupModalVisible(true);
     }
   };
@@ -277,13 +246,11 @@ export default function Main() {
     } else setLoadingModalVisible(false);
   };
   const handleBorderClick = () => {
-    if (buttonState.text === 'START') {
+    if (route === undefined) {
       setErrorModalVisible(true);
-    } else if (buttonState.text === 'STOP') {
-      if (route !== undefined) {
-        getBorders(route.currentCountry);
-        setBorderModalVisible(true);
-      }
+    } else {
+      getBorders(route.currentCountry);
+      setBorderModalVisible(true);
     }
   };
   const confirmBorderClick = async (input: string) => {
@@ -313,43 +280,13 @@ export default function Main() {
   //lista zdarzeń
   const renderRouteEventItem = ({item}: {item: routeEvent}) => (
     <View style={[styles.eventCard]}>
-      <View style={styles.eventIconSection}>
-        {item.eventName === 'start' && (
-          <Image
-            source={require('./assets/icons/start.png')}
-            style={styles.eventIcon}
-            resizeMode="contain"
-          />
-        )}
-        {item.eventName === 'border' && (
-          <Image
-            source={require('./assets/icons/border.png')}
-            style={{...styles.eventIcon, width: '75%', height: '75%'}}
-            resizeMode="contain"
-          />
-        )}
-        {item.eventName === 'refuel' && (
-          <Image
-            source={require('./assets/icons/refuel.png')}
-            style={{...styles.eventIcon, width: '70%', height: '70%'}}
-            resizeMode="contain"
-          />
-        )}
-        {item.eventName === 'pickup' && (
-          <Image
-            source={require('./assets/icons/forklift.png')}
-            style={{...styles.eventIcon, width: '70%', height: '70%'}}
-            resizeMode="contain"
-          />
-        )}
-      </View>
       <View style={styles.eventSection}>
         {item.eventName === 'start' && (
           <View>
             <Text
               style={{
                 ...styles.eventText,
-                fontFamily: 'RobotoCondensed-Bold',
+                fontFamily: 'RobotoCondensed-Regular',
               }}>
               ROZPOCZĘCIE TRASY
             </Text>
@@ -363,7 +300,7 @@ export default function Main() {
             <Text
               style={{
                 ...styles.eventText,
-                fontFamily: 'RobotoCondensed-Bold',
+                fontFamily: 'RobotoCondensed-Regular',
               }}>
               GRANICA {item.borderFrom}/{item.borderTo}
             </Text>
@@ -378,7 +315,7 @@ export default function Main() {
               <Text
                 style={{
                   ...styles.eventText,
-                  fontFamily: 'RobotoCondensed-Bold',
+                  fontFamily: 'RobotoCondensed-Regular',
                 }}>
                 TANKOWANIE
               </Text>
@@ -387,12 +324,13 @@ export default function Main() {
               </Text>
             </View>
             <View style={styles.eventCol2}>
-              <Text style={styles.eventText}>
+              <Text style={{...styles.eventText, textAlign: 'right'}}>
                 {item.refuelTotal} {Currency(item.refuelCurrency)}
               </Text>
-              <Text style={styles.eventText}>{item.refuelType}</Text>
+              <Text style={{...styles.eventText, textAlign: 'right'}}>
+                {item.refuelType}
+              </Text>
             </View>
-            <View style={styles.eventCol3}></View>
           </View>
         )}
         {item.eventName === 'pickup' && (
@@ -401,19 +339,13 @@ export default function Main() {
               <Text
                 style={{
                   ...styles.eventText,
-                  fontFamily: 'RobotoCondensed-Bold',
+                  fontFamily: 'RobotoCondensed-Regular',
                 }}>
                 ZAŁADUNEK
               </Text>
               <Text style={styles.eventText}>
                 {Moment(item.date).format('DD.MM.YYYY hh:mm')}
               </Text>
-            </View>
-            <View style={styles.eventCol2}>
-              <Text style={styles.eventText}>{item.pickupCount}</Text>
-              <Text style={styles.eventText}>{item.pickupWeight} KG</Text>
-            </View>
-            <View style={styles.eventCol3}>
               {item.dropDate === null && (
                 <Pressable
                   style={styles.dropButton}
@@ -426,7 +358,8 @@ export default function Main() {
                   <Text
                     style={{
                       ...styles.eventText,
-                      fontFamily: 'RobotoCondensed-Bold',
+                      fontFamily: 'RobotoCondensed-Regular',
+                      marginTop: 10,
                     }}>
                     ROZŁADUNEK
                   </Text>
@@ -435,6 +368,14 @@ export default function Main() {
                   </Text>
                 </View>
               )}
+            </View>
+            <View style={styles.eventCol2}>
+              <Text style={{...styles.eventText, textAlign: 'right'}}>
+                {item.pickupCount}
+              </Text>
+              <Text style={{...styles.eventText, textAlign: 'right'}}>
+                {item.pickupWeight} KG
+              </Text>
             </View>
           </View>
         )}
@@ -455,56 +396,92 @@ export default function Main() {
     </View>
   );
 
+  const hanldeCloseLoadingModal = () => {
+    setLoadingModalVisible(false);
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.menuContainer}>
-        <Pressable
-          style={styles.backButton}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={{...styles.button, marginRight: 10}}
           onPress={() => navigation.navigate('Menu')}>
           <Text style={styles.menuButtonText}>↲ POWRÓT</Text>
-        </Pressable>
-        <Pressable
-          style={styles.menuButton}
-          onPress={() => handlePickupClick()}>
-          <Text style={styles.menuButtonText}>ZAŁADUNEK</Text>
-        </Pressable>
-        <Pressable
-          style={styles.menuButton}
-          onPress={() => handleRefuelClick()}>
-          <Text style={styles.menuButtonText}>TANKOWANIE</Text>
-        </Pressable>
-
-        <Pressable
-          style={styles.menuButton}
-          onPress={() => handleBorderClick()}>
-          <Text style={styles.menuButtonText}>GRANICA</Text>
-        </Pressable>
-        <Pressable
-          style={{...styles.startButton, backgroundColor: buttonState.color}}
-          onPressIn={handleStartPress}
-          onPressOut={handleEndPress}>
-          <Animated.View
+        </TouchableOpacity>
+        {route !== undefined && (
+          <TouchableOpacity
             style={{
-              position: 'absolute',
-              backgroundColor: 'white',
-              width: '100%',
-              height: '100%',
-              borderRadius: 0,
-              borderWidth: 0,
-              opacity: 0.5,
-              borderColor: 'white',
-              transform: [{scaleY: progressInterpolation}],
+              ...styles.button,
+              backgroundColor: '#EE4E4E',
+              marginBottom: 20,
             }}
-          />
-          <Text style={styles.startButtonText}>{buttonState.text}</Text>
-        </Pressable>
+            onPress={() => finishRoute()}>
+            <Text style={styles.menuButtonText}>ZAKOŃCZ TRASĘ</Text>
+          </TouchableOpacity>
+        )}
+        {route === undefined && (
+          <TouchableOpacity
+            style={{
+              ...styles.button,
+              backgroundColor: '#0f3877',
+              marginBottom: 20,
+            }}
+            onPress={() => handleStartClick()}>
+            <Text style={styles.menuButtonText}>ROZPOCZNIJ TRASĘ</Text>
+          </TouchableOpacity>
+        )}
       </View>
-      <FlatList
-        data={routeEvents}
-        renderItem={renderRouteEventItem}
-        keyExtractor={item => item.id.toString()}
-        contentContainerStyle={styles.eventsList}
-      />
+
+      {route !== undefined && (
+        <View style={styles.listContainer}>
+          <FlatList
+            data={routeEvents}
+            renderItem={renderRouteEventItem}
+            keyExtractor={item => item.id.toString()}
+            contentContainerStyle={styles.eventsList}
+          />
+          <View style={styles.actionsContainer}>
+            <TouchableOpacity
+              style={{...styles.actionButton, marginRight: 20}}
+              onPress={() => handlePickupClick()}>
+              <Image
+                source={require('./assets/icons/forklift.png')}
+                style={styles.eventIcon}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{...styles.actionButton, marginRight: 20}}
+              onPress={() => handleRefuelClick()}>
+              <Image
+                source={require('./assets/icons/refuel.png')}
+                style={styles.eventIcon}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => handleBorderClick()}>
+              <Image
+                source={require('./assets/icons/border.png')}
+                style={styles.eventIcon}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+      {route === undefined && (
+        <View style={styles.emptyListContainer}>
+          <Text style={styles.emptyListText}>
+            Wygląda na to, że nic tu nie ma!
+          </Text>
+          <Text style={styles.emptyListText}>
+            Kliknij przycisk na górze, aby rozpocząć.
+          </Text>
+        </View>
+      )}
+
       {/* Modal startowania trasy */}
       <Modal
         visible={isStartModalVisible}
@@ -516,34 +493,36 @@ export default function Main() {
             <Text style={styles.modalTitle}>NOWA TRASA</Text>
 
             <View style={styles.pickerContainer}>
-              <Text style={styles.modalText}>POJAZD: </Text>
-              <Picker
-                style={styles.picker}
-                selectedValue={selectedVehicle}
-                onValueChange={itemValue => setSelectedVehicle(itemValue)}>
-                <Picker.Item label="WYBIERZ POJAZD" value="" />
-                {vehicles.map(vehicle => (
-                  <Picker.Item
-                    key={vehicle.licensePlate}
-                    label={vehicle.licensePlate}
-                    value={vehicle}
-                  />
-                ))}
-              </Picker>
-              <Text style={styles.modalText}>FIRMA: </Text>
-              <Picker
-                style={styles.picker}
-                selectedValue={selectedCompany}
-                onValueChange={itemValue => setSelectedCompany(itemValue)}>
-                <Picker.Item label="WYBIERZ FIRMĘ" value="" />
-                {companies.map(company => (
-                  <Picker.Item
-                    key={company.name}
-                    label={company.name}
-                    value={company}
-                  />
-                ))}
-              </Picker>
+              <View style={styles.inputWrapper}>
+                <Picker
+                  style={styles.picker}
+                  selectedValue={selectedVehicle}
+                  onValueChange={itemValue => setSelectedVehicle(itemValue)}>
+                  <Picker.Item label="WYBIERZ POJAZD" value="" />
+                  {vehicles.map(vehicle => (
+                    <Picker.Item
+                      key={vehicle.licensePlate}
+                      label={vehicle.licensePlate}
+                      value={vehicle}
+                    />
+                  ))}
+                </Picker>
+              </View>
+              <View style={styles.inputWrapper}>
+                <Picker
+                  style={styles.picker}
+                  selectedValue={selectedCompany}
+                  onValueChange={itemValue => setSelectedCompany(itemValue)}>
+                  <Picker.Item label="WYBIERZ FIRMĘ" value="" />
+                  {companies.map(company => (
+                    <Picker.Item
+                      key={company.name}
+                      label={company.name}
+                      value={company}
+                    />
+                  ))}
+                </Picker>
+              </View>
             </View>
             <View style={styles.modalButtons}>
               <Pressable
@@ -564,50 +543,54 @@ export default function Main() {
       <Modal
         visible={isRefuelModalVisible}
         transparent={true}
-        animationType="slide"
+        animationType="none"
         onRequestClose={() => setRefuelModalVisible(false)}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>TANKOWANIE</Text>
 
             <View style={styles.pickerContainer}>
-              <Text style={styles.modalText}>ILOŚĆ: </Text>
-              <TextInput
-                style={styles.input}
-                placeholder="ILOŚĆ"
-                keyboardType="numeric"
-                placeholderTextColor="#B0B0B0"
-                value={refuelCount}
-                onChangeText={setRefuelCount}
-              />
-              <Text style={styles.modalText}>TOTAL: </Text>
-              <TextInput
-                style={styles.input}
-                placeholder="TOTAL"
-                keyboardType="numeric"
-                placeholderTextColor="#B0B0B0"
-                value={refuelTotal}
-                onChangeText={setRefuelTotal}
-              />
-              <Text style={styles.modalText}>WALUTA: </Text>
-              <Picker
-                style={styles.picker}
-                selectedValue={refuelCurrency}
-                onValueChange={setRefuelCurrency}>
-                <Picker.Item label="WALUTA" value="" />
-                <Picker.Item label="ZŁ" value="PLN" />
-                <Picker.Item label="€" value="EURO" />
-                <Picker.Item label="Kč" value="KORONY_CZESKIE" />
-              </Picker>
-              <Text style={styles.modalText}>RODZAJ: </Text>
-              <Picker
-                style={styles.picker}
-                selectedValue={refuelType}
-                onValueChange={setRefuelType}>
-                <Picker.Item label="RODZAJ" value="" />
-                <Picker.Item label="ON" value="ON" />
-                <Picker.Item label="ADBLUE" value="ADBLUE" />
-              </Picker>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="ILOŚĆ"
+                  keyboardType="numeric"
+                  placeholderTextColor="#B0B0B0"
+                  value={refuelCount}
+                  onChangeText={setRefuelCount}
+                />
+              </View>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="WARTOŚĆ"
+                  keyboardType="numeric"
+                  placeholderTextColor="#B0B0B0"
+                  value={refuelTotal}
+                  onChangeText={setRefuelTotal}
+                />
+              </View>
+              <View style={styles.inputWrapper}>
+                <Picker
+                  style={styles.picker}
+                  selectedValue={refuelCurrency}
+                  onValueChange={setRefuelCurrency}>
+                  <Picker.Item label="WALUTA" value="" />
+                  <Picker.Item label="ZŁ" value="PLN" />
+                  <Picker.Item label="€" value="EURO" />
+                  <Picker.Item label="Kč" value="KORONY_CZESKIE" />
+                </Picker>
+              </View>
+              <View style={styles.inputWrapper}>
+                <Picker
+                  style={styles.picker}
+                  selectedValue={refuelType}
+                  onValueChange={setRefuelType}>
+                  <Picker.Item label="RODZAJ" value="" />
+                  <Picker.Item label="ON" value="ON" />
+                  <Picker.Item label="ADBLUE" value="ADBLUE" />
+                </Picker>
+              </View>
             </View>
             <View style={styles.modalButtons}>
               <Pressable
@@ -628,48 +611,51 @@ export default function Main() {
       <Modal
         visible={isPickupModalVisible}
         transparent={true}
-        animationType="slide"
+        animationType="none"
         onRequestClose={() => setPickupModalVisible(false)}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>ZAŁADUNEK</Text>
 
             <View style={styles.pickerContainer}>
-              <Text style={styles.modalText}>ILOŚĆ: </Text>
-              <TextInput
-                style={styles.input}
-                placeholder="ILOŚĆ"
-                keyboardType="numeric"
-                placeholderTextColor="#B0B0B0"
-                value={pickupCount}
-                onChangeText={setPickupCount}
-              />
-              <Text style={styles.modalText}>WAGA[KG]: </Text>
-              <TextInput
-                style={styles.input}
-                placeholder="WAGA[KG]"
-                keyboardType="numeric"
-                placeholderTextColor="#B0B0B0"
-                value={pickupWeight}
-                onChangeText={setPickupWeight}
-              />
-              <Text style={styles.modalText}>KOMENTARZ: </Text>
-              <TextInput
-                style={{
-                  ...styles.input,
-                  height: 120,
-                  textAlignVertical: 'top',
-                }}
-                editable
-                multiline
-                numberOfLines={4}
-                maxLength={300}
-                placeholder="Tutaj możesz dodać komentarz"
-                keyboardType="default"
-                placeholderTextColor="#B0B0B0"
-                value={pickupComment}
-                onChangeText={setPickupComment}
-              />
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="ILOŚĆ"
+                  keyboardType="numeric"
+                  placeholderTextColor="#B0B0B0"
+                  value={pickupCount}
+                  onChangeText={setPickupCount}
+                />
+              </View>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="WAGA[KG]"
+                  keyboardType="numeric"
+                  placeholderTextColor="#B0B0B0"
+                  value={pickupWeight}
+                  onChangeText={setPickupWeight}
+                />
+              </View>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={{
+                    ...styles.input,
+                    height: 120,
+                    textAlignVertical: 'top',
+                  }}
+                  editable
+                  multiline
+                  numberOfLines={4}
+                  maxLength={300}
+                  placeholder="Tutaj możesz dodać komentarz"
+                  keyboardType="default"
+                  placeholderTextColor="#B0B0B0"
+                  value={pickupComment}
+                  onChangeText={setPickupComment}
+                />
+              </View>
             </View>
             <View style={styles.modalButtons}>
               <Pressable
@@ -690,7 +676,7 @@ export default function Main() {
       <Modal
         visible={isBorderModalVisible}
         transparent={true}
-        animationType="slide"
+        animationType="none"
         onRequestClose={() => setBorderModalVisible(false)}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -738,36 +724,67 @@ export default function Main() {
       <Modal
         visible={isLoadingModalVisible}
         transparent={true}
-        animationType="slide">
+        animationType="none">
         <View style={styles.modalContainer}>
           <View
             style={{
               ...styles.modalContent,
               backgroundColor: 'white',
-              width: '25%',
-              height: '25%',
-              justifyContent: 'center',
-              alignItems: 'center',
+              width: '50%',
+              height: '30%',
             }}>
-            <Animated.Image
-              source={require('./assets/icons/loading.png')}
-              style={{
-                backgroundColor: 'transparent',
-
-                resizeMode: 'contain',
-                height: '80%',
-                width: '80%',
-                transform: [{rotate: spin}],
-              }}
-              resizeMode="contain"></Animated.Image>
-            <Text
-              style={{
-                ...styles.modalText,
-                color: 'black',
-                textAlign: 'center',
-              }}>
-              Ładowanie...
-            </Text>
+            {isLoadingModalError === false && (
+              <View>
+                <Animated.Image
+                  source={require('./assets/icons/loading.png')}
+                  style={{
+                    backgroundColor: 'transparent',
+                    resizeMode: 'contain',
+                    alignSelf: 'center',
+                    height: '70%',
+                    marginBottom: 20,
+                    transform: [{rotate: spin}],
+                  }}></Animated.Image>
+                <Text
+                  style={{
+                    ...styles.modalText,
+                    color: 'black',
+                    textAlign: 'center',
+                    textAlignVertical: 'center',
+                    height: '20%',
+                  }}>
+                  Proszę czekać...
+                </Text>
+              </View>
+            )}
+            {isLoadingModalError === true && (
+              <View>
+                <Image
+                  source={require('./assets/icons/danger.png')}
+                  style={{
+                    backgroundColor: 'transparent',
+                    resizeMode: 'contain',
+                    alignSelf: 'center',
+                    height: '70%',
+                    marginBottom: 10,
+                  }}></Image>
+                <Text
+                  style={{
+                    ...styles.modalText,
+                    color: 'black',
+                    textAlign: 'center',
+                    height: '10%',
+                    marginBottom: 10,
+                  }}>
+                  Ups! Coś poszło nie tak...
+                </Text>
+                <TouchableOpacity
+                  onPress={hanldeCloseLoadingModal}
+                  style={styles.errorModalButton}>
+                  <Text style={styles.errorModalButtonText}>ANULUJ</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
       </Modal>
@@ -778,10 +795,74 @@ export default function Main() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-
     backgroundColor: '#F5EDED',
-    padding: 5,
+    flexDirection: 'column',
   },
+  header: {
+    height: 80,
+    flexDirection: 'row',
+    backgroundColor: 'transparent',
+    borderBottomLeftRadius: 25,
+    borderTopRightRadius: 25,
+    padding: 10,
+  },
+  button: {
+    flex: 1,
+    backgroundColor: '#938b8b',
+    width: width * 0.9,
+    height: 60,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  listContainer: {
+    flex: 1,
+    flexDirection: 'column',
+  },
+  emptyListContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyListText: {
+    color: 'black',
+    fontSize: 20,
+    fontFamily: 'RobotoCondensed-Light',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  actionsContainer: {
+    height: 80,
+    flexDirection: 'row',
+    padding: 10,
+    backgroundColor: 'transparent',
+  },
+  actionButton: {
+    flex: 1,
+    backgroundColor: '#0f3877',
+    height: 60,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  eventsList: {
+    backgroundColor: 'transparent',
+    marginHorizontal: 0,
+  },
+
+  errorModalButton: {
+    width: '100%',
+    height: '10%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#0f3877',
+  },
+  errorModalButtonText: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontFamily: 'RobotoCondensed-Light',
+  },
+
   menuContainer: {
     height: '10%',
     backgroundColor: '#F5EDED',
@@ -832,7 +913,7 @@ const styles = StyleSheet.create({
   menuButtonText: {
     color: '#FFFFFF',
     fontSize: 20,
-    fontFamily: 'RobotoCondensed-Regular',
+    fontFamily: 'RobotoCondensed-Light',
     textAlign: 'center',
   },
   modalContainer: {
@@ -842,51 +923,43 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContent: {
-    width: '90%',
     backgroundColor: '#F5EDED',
     borderRadius: 5,
-    padding: 20,
+    justifyContent: 'center',
+    padding: 10,
   },
   modalTitle: {
     color: '#243642',
-    fontSize: 25,
+    fontSize: 30,
+    marginBottom: 10,
     fontFamily: 'RobotoCondensed-Regular',
-    marginBottom: 20,
     textAlign: 'center',
   },
   modalText: {
     color: '#243642',
     fontSize: 20,
-    fontFamily: 'RobotoCondensed-Regular',
+    fontFamily: 'RobotoCondensed-Light',
     marginBottom: 0,
     textAlign: 'left',
   },
-  pickerContainer: {
-    flexDirection: 'column',
-  },
-  picker: {
-    color: 'white',
-    fontSize: 20,
-    fontFamily: 'RobotoCondensed-Regular',
-    marginBottom: 30,
-    backgroundColor: '#243642',
-    borderRadius: 5,
-  },
+
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   modalButton: {
     padding: 10,
-    borderRadius: 5,
+    borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
+    height: 50,
     width: '48%',
+    fontFamily: 'RobotoCondensed-Light',
   },
   modalErrorText: {
     color: '#243642',
     fontSize: 20,
-    fontFamily: 'RobotoCondensed-Regular',
+    fontFamily: 'RobotoCondensed-Light',
     marginBottom: 30,
     textAlign: 'center',
   },
@@ -898,69 +971,69 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   cancelButton: {
-    backgroundColor: '#D32F2F',
+    backgroundColor: '#EE4E4E',
   },
   saveButton: {
-    backgroundColor: '#238636',
+    backgroundColor: '#0f3877',
   },
   buttonText: {
     color: '#FFFFFF',
     fontSize: 20,
-    fontFamily: 'RobotoCondensed-Regular',
+    fontFamily: 'RobotoCondensed-Light',
+  },
+  inputWrapper: {
+    alignItems: 'center',
+    backgroundColor: '#F5EDED',
+    borderColor: '#0f3877',
+    borderWidth: 2,
+    borderRadius: 25,
+    marginBottom: 15,
+    width: '100%',
+    paddingHorizontal: 10,
   },
   input: {
-    backgroundColor: '#243642',
-    padding: 10,
-    color: '#FFFFFF',
+    height: 50,
+    width: '100%',
+    color: '#0f3877',
     fontSize: 20,
-    fontFamily: 'RobotoCondensed-Regular',
-    marginBottom: 15,
+    fontFamily: 'RobotoCondensed-Light',
   },
-  eventsList: {
-    padding: 0,
+  pickerContainer: {
+    flexDirection: 'column',
+  },
+  picker: {
+    width: '100%',
+    fontSize: 20,
+    fontFamily: 'RobotoCondensed-Light',
+    backgroundColor: 'transparent',
   },
 
   eventCard: {
     flexDirection: 'row',
     backgroundColor: 'transparent',
-    marginBottom: 15,
-  },
-  eventIconSection: {
-    flex: 1,
-    padding: 0,
-    backgroundColor: 'transparent',
-    borderTopLeftRadius: 5,
-    borderBottomLeftRadius: 5,
-    borderWidth: 3,
-    borderColor: '#243642',
     justifyContent: 'center',
-    alignItems: 'center',
-    height: 'auto',
-    width: 'auto',
+    padding: 10,
   },
   eventSection: {
-    flex: 10,
-    padding: 5,
+    padding: 15,
     flexDirection: 'row',
-    backgroundColor: '#26577C',
-    borderWidth: 3,
-    borderLeftWidth: 0,
-    borderColor: '#243642',
-    borderTopRightRadius: 5,
-    borderBottomRightRadius: 5,
+    backgroundColor: 'transparent',
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderColor: '#d2c6c6',
+    borderRadius: 20,
     width: '100%',
   },
   eventText: {
     flexDirection: 'column',
-    color: '#FFFFFF',
+    color: 'black',
     fontSize: 20,
-    fontFamily: 'RobotoCondensed-Regular',
+    fontFamily: 'RobotoCondensed-Light',
     textAlign: 'left',
   },
   eventIcon: {
-    flex: 1,
-    height: '100%',
-    width: '100%',
+    height: '50%',
+    width: '50%',
   },
   eventCol1: {
     flex: 2,
@@ -970,55 +1043,44 @@ const styles = StyleSheet.create({
   eventCol2: {
     flex: 1,
   },
-  eventCol3: {
-    flex: 2,
-    alignItems: 'flex-end',
-  },
   bordersList: {
-    padding: 0,
+    margin: 10,
   },
   borderCard: {
     flexDirection: 'row',
-    backgroundColor: '#243642',
-    borderRadius: 5,
+    backgroundColor: 'transparent',
     marginTop: 20,
   },
   borderSection: {
-    padding: 10,
     flexDirection: 'column',
-    backgroundColor: '#243642',
-    borderRadius: 5,
+    borderColor: '#0f3877',
     width: '100%',
     zIndex: 0,
   },
   borderButton: {
     flex: 1,
-    height: '100%',
-    backgroundColor: '#243642',
-    borderWidth: 0,
-    borderRadius: 5,
-    borderColor: '#6482AD',
+    backgroundColor: '#938b8b',
+    borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 5,
   },
   borderButtonText: {
     color: '#FFFFFF',
     fontSize: 30,
     padding: 20,
-    fontFamily: 'RobotoCondensed-Bold',
+    fontFamily: 'RobotoCondensed-Regular',
     textAlign: 'center',
   },
   borderCancelButton: {
     position: 'absolute',
     top: 10,
-    right: 20,
-    height: 60,
-    width: 60,
+    right: 10,
+    height: 40,
+    width: 40,
     zIndex: 1,
-    backgroundColor: 'red',
+    backgroundColor: '#EE4E4E',
     borderWidth: 0,
-    borderRadius: 5,
+    borderRadius: 15,
     borderColor: '#6482AD',
     justifyContent: 'center',
     alignItems: 'center',
@@ -1028,14 +1090,16 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#243642',
-    margin: 2,
+    alignContent: 'center',
+    backgroundColor: '#938b8b',
     width: '50%',
+    height: 30,
+    marginTop: 10,
   },
   dropButtonText: {
     fontSize: 15,
-    padding: 0,
     color: '#FFFFFF',
-    fontFamily: 'RobotoCondensed-Regular',
+    fontFamily: 'RobotoCondensed-Light',
+    textAlignVertical: 'center',
   },
 });

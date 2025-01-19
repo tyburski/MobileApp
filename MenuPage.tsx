@@ -20,6 +20,15 @@ let deviceWidth = Dimensions.get('window').width;
 
 export default function Menu() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const [userName, setUsername] = useState('');
+
+  useEffect(() => {
+    getUser();
+  });
+  const getUser = async () => {
+    const name = await AsyncStorage.getItem('userName');
+    if (name !== null) setUsername(name);
+  };
 
   const handleTilePress = (route: keyof RootStackParamList) => {
     navigation.navigate(route);
@@ -27,43 +36,50 @@ export default function Menu() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.headerContainer}>
+        <View style={styles.header}>
+          <Image
+            source={require('./assets/icons/userWhite.png')}
+            style={styles.icon}
+          />
+          <Text style={styles.headerText}>{userName.toLocaleUpperCase()}</Text>
+        </View>
+      </View>
+      <View style={styles.logoSection}>
+        <Image source={require('./assets/logo.png')} style={styles.logo} />
+      </View>
       <View style={styles.tilesContainer}>
-        <View style={styles.row1}>
+        <View style={styles.row}>
           <Pressable
-            style={styles.tile}
+            style={styles.tileHorizontal}
             onPress={() => handleTilePress('Main')}>
             <Text style={styles.tileText}>TRASA</Text>
           </Pressable>
 
           <Pressable
-            style={styles.tile}
+            style={styles.tileHorizontal}
             onPress={() => handleTilePress('HistoriaTras')}>
             <Text style={styles.tileText}>HISTORIA</Text>
           </Pressable>
-        </View>
-
-        <View style={styles.row2}>
           <Pressable
-            style={styles.tile}
+            style={styles.tileHorizontal}
             onPress={() => handleTilePress('Companies')}>
             <Text style={styles.tileText}>FIRMY</Text>
           </Pressable>
 
           <Pressable
-            style={styles.tile}
+            style={styles.tileHorizontal}
             onPress={() => handleTilePress('Vehicles')}>
             <Text style={styles.tileText}>POJAZDY</Text>
           </Pressable>
-        </View>
-        <View style={styles.row3}>
           <Pressable
-            style={styles.tile}
+            style={styles.tileHorizontal}
             onPress={() => handleTilePress('Ustawienia')}>
             <Text style={styles.tileText}>USTAWIENIA</Text>
           </Pressable>
 
           <Pressable
-            style={{...styles.tile, backgroundColor: '#EE4E4E'}}
+            style={{...styles.tileHorizontal, backgroundColor: '#EE4E4E'}}
             onPress={() => Logout(navigation)}>
             <Text style={styles.tileText}>WYLOGUJ</Text>
           </Pressable>
@@ -76,81 +92,79 @@ export default function Menu() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5EDED',
-    padding: 2,
-    justifyContent: 'center',
-  },
-  tilesContainer: {
-    height: '100%',
     flexDirection: 'column',
-    justifyContent: 'center',
+    backgroundColor: '#F5EDED',
+    padding: 20,
+  },
+  headerContainer: {
+    height: 60,
+    borderRadius: 25,
     alignContent: 'center',
+    backgroundColor: '#938b8b',
   },
-  row1: {
+  header: {
     flex: 1,
+    height: 60,
+    width: '100%',
+    borderRadius: 25,
+    alignItems: 'center',
     flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  row2: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+  icon: {
+    marginLeft: 20,
+    marginRight: -50,
+    width: 30,
+    height: 30,
+    resizeMode: 'contain',
   },
-  row3: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  tile: {
-    backgroundColor: '#243642',
-    width: deviceWidth / 2 - 2,
-    height: '100%',
-    borderWidth: 2,
-    borderColor: '#F5EDED',
-    borderRadius: 5,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  infoTile: {
-    backgroundColor: '#161B22',
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-    borderRadius: 0,
-    marginBottom: tileMargin / 2,
-    paddingLeft: 5,
+  headerText: {
+    width: '100%',
+    color: '#F5EDED',
+    fontSize: 20,
+    fontFamily: 'RobotoCondensed-Light',
+    textAlign: 'center',
   },
   logoSection: {
+    flex: 3,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: tileMargin,
+    marginBottom: 20,
   },
   logo: {
-    width: '60%',
-    height: '60%',
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  tilesContainer: {
+    flex: 4,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignContent: 'flex-end',
+  },
+  row: {
+    flex: 1,
+    flexDirection: 'column',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginBottom: 0,
+  },
+  tileHorizontal: {
+    backgroundColor: '#0f3877',
+    width: width * 0.9,
+    height: 60,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
   },
 
   logoutTile: {
     backgroundColor: '#D32F2F',
   },
   tileText: {
-    color: '#C9D1D9',
-    fontSize: 30,
-    fontFamily: 'RobotoCondensed-Regular',
-    textAlign: 'center',
-  },
-  tileText2: {
-    color: '#C9D1D9',
-    fontSize: 30,
-    fontFamily: 'RobotoCondensed-Regular',
-    textAlign: 'center',
-  },
-  infoText: {
-    color: '#C9D1D9',
-    fontSize: 30,
-    fontFamily: 'RobotoCondensed-Regular',
+    color: '#F5EDED',
+    fontSize: 20,
+    fontFamily: 'RobotoCondensed-Light',
     textAlign: 'center',
   },
 });

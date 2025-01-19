@@ -9,6 +9,7 @@ import {
   Modal,
   Alert,
   Pressable,
+  Dimensions,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Picker} from '@react-native-picker/picker';
@@ -17,6 +18,8 @@ import {createVehicle, removeVehicle, getVehicles} from './ApiController';
 import {useNavigation} from '@react-navigation/native';
 import {NavigationProp} from '@react-navigation/native';
 import {RootStackParamList} from './types';
+
+const {width, height} = Dimensions.get('window');
 
 export default function VehiclePage() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -108,15 +111,14 @@ export default function VehiclePage() {
     <View style={styles.container}>
       <View style={styles.menuContainer}>
         <Pressable
-          style={styles.menuButton}
+          style={{...styles.menuButton, marginRight: 10}}
           onPress={() => navigation.navigate('Menu')}>
           <Text style={styles.menuButtonText}>↲ POWRÓT</Text>
         </Pressable>
         <Pressable
-          style={styles.menuButton}
+          style={{...styles.menuButton, backgroundColor: '#0f3877'}}
           onPress={() => setCreateModalVisible(true)}>
-          <Text style={styles.menuButtonText}>DODAJ</Text>
-          <Text style={styles.menuButtonText}>POJAZD</Text>
+          <Text style={styles.menuButtonText}>DODAJ POJAZD</Text>
         </Pressable>
       </View>
       <FlatList
@@ -129,7 +131,7 @@ export default function VehiclePage() {
       <Modal
         visible={isCreateModalVisible}
         transparent={true}
-        animationType="slide"
+        animationType="none"
         onRequestClose={() => setCreateModalVisible(false)}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -177,77 +179,75 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   menuContainer: {
-    height: '10%',
-    width: '40%',
-    backgroundColor: '#F5EDED',
+    height: 80,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 15,
+    backgroundColor: 'transparent',
+    borderBottomLeftRadius: 25,
+    borderTopRightRadius: 25,
+    padding: 10,
   },
   vehicleList: {
     padding: 5,
   },
   vehicleCard: {
     flexDirection: 'row',
-    backgroundColor: '#243642',
-    borderRadius: 5,
-    marginBottom: 15,
+    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    padding: 10,
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderColor: '#d2c6c6',
+    borderRadius: 20,
+    marginBottom: 20,
   },
   vehicleSection: {
-    flex: 5,
-    padding: 10,
-    flexDirection: 'column',
-    backgroundColor: '#243642',
-    borderRadius: 5,
-    width: '100%',
-  },
-  removeButtonSection: {
-    flex: 1,
-    padding: 10,
+    flex: 3,
+    backgroundColor: 'transparent',
   },
   vehicleText: {
     flexDirection: 'column',
-    color: '#FFFFFF',
+    color: 'black',
+    fontSize: 20,
+    fontFamily: 'RobotoCondensed-Light',
+    textAlign: 'left',
+  },
+  removeButtonSection: {
+    flex: 1,
+    padding: 5,
+  },
+  vehicleLabel: {
+    color: 'black',
     fontSize: 20,
     fontFamily: 'RobotoCondensed-Regular',
     textAlign: 'left',
   },
-  vehicleLabel: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontFamily: 'RobotoCondensed-Bold',
-    textAlign: 'left',
-  },
   removeIcon: {
     flex: 1,
-    backgroundColor: '#D32F2F',
-    borderRadius: 5,
-    height: '100%',
+    backgroundColor: '#EE4E4E',
+    borderRadius: 25,
+    height: 30,
     justifyContent: 'center',
     alignItems: 'center',
   },
   removeIconText: {
     color: '#FFFFFF',
-    fontSize: 20,
+    fontSize: 15,
     fontFamily: 'RobotoCondensed-Regular',
     textAlign: 'center',
   },
   menuButton: {
     flex: 1,
-    height: '100%',
-    backgroundColor: '#243642',
-    borderWidth: 0,
-    borderRadius: 5,
-    borderColor: '#6482AD',
+    backgroundColor: '#938b8b',
+    width: width * 0.9,
+    height: 60,
+    borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 5,
   },
   menuButtonText: {
     color: '#FFFFFF',
     fontSize: 20,
-    fontFamily: 'RobotoCondensed-Regular',
+    fontFamily: 'RobotoCondensed-Light',
     textAlign: 'center',
   },
   modalContainer: {
