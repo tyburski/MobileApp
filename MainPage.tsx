@@ -4,7 +4,6 @@ import {
   FlatList,
   Image,
   StyleSheet,
-  Pressable,
   Animated,
   Easing,
   TextInput,
@@ -38,7 +37,7 @@ import {RootStackParamList} from './types';
 import {NavigationProp} from '@react-navigation/native';
 import Moment from 'moment';
 
-const {width, height} = Dimensions.get('window');
+const {width} = Dimensions.get('window');
 
 export default function Main() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -69,11 +68,6 @@ export default function Main() {
   const [pickupCount, setPickupCount] = useState('');
   const [pickupWeight, setPickupWeight] = useState('');
   const [pickupComment, setPickupComment] = useState('');
-
-  const [buttonState, setButtonState] = useState({
-    text: 'START',
-    color: '#243642',
-  });
 
   const playSound = () => {
     Sound.setCategory('Playback');
@@ -122,7 +116,7 @@ export default function Main() {
       setLoadingModalVisible(false);
       return true;
     } else {
-      setLoadingModalError(true);
+      setLoadingModalVisible(false);
       return false;
     }
   };
@@ -135,7 +129,7 @@ export default function Main() {
       setLoadingModalVisible(false);
       return true;
     } else {
-      setLoadingModalError(true);
+      setLoadingModalVisible(false);
       return false;
     }
   };
@@ -238,6 +232,11 @@ export default function Main() {
         setLoadingModalVisible(false);
         getRoute();
       } else setLoadingModalError(true);
+
+      setRefuelCount('');
+      setRefuelCurrency('');
+      setRefuelTotal('');
+      setRefuelType('');
     }
   };
   const handlePickupClick = () => {
@@ -266,6 +265,10 @@ export default function Main() {
         setLoadingModalVisible(false);
         getRoute();
       } else setLoadingModalError(true);
+
+      setPickupCount('');
+      setPickupWeight('');
+      setPickupComment('');
     }
   };
   const handleDropClick = async (event: routeEvent) => {
@@ -388,11 +391,11 @@ export default function Main() {
                 {Moment(item.date).format('DD.MM.YYYY hh:mm')}
               </Text>
               {item.dropDate === null && (
-                <Pressable
+                <TouchableOpacity
                   style={styles.dropButton}
                   onPress={() => handleDropClick(item)}>
                   <Text style={styles.dropButtonText}>ROZŁADUNEK</Text>
-                </Pressable>
+                </TouchableOpacity>
               )}
               {item.dropDate !== null && (
                 <View style={styles.eventCol1}>
@@ -428,11 +431,11 @@ export default function Main() {
   const renderBorderEventItem = ({item}: {item: string}) => (
     <View style={[styles.borderCard]}>
       <View style={styles.borderSection}>
-        <Pressable
+        <TouchableOpacity
           style={styles.borderButton}
           onPress={() => confirmBorderClick(item)}>
           <Text style={styles.borderButtonText}>{item}</Text>
-        </Pressable>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -527,7 +530,7 @@ export default function Main() {
       <Modal
         visible={isStartModalVisible}
         transparent={true}
-        animationType="none"
+        animationType="fade"
         onRequestClose={() => setStartModalVisible(false)}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -566,16 +569,16 @@ export default function Main() {
               </View>
             </View>
             <View style={styles.modalButtons}>
-              <Pressable
+              <TouchableOpacity
                 style={[styles.modalButton, styles.saveButton]}
                 onPress={() => startRouteClick()}>
                 <Text style={styles.buttonText}>ZACZYNAMY</Text>
-              </Pressable>
-              <Pressable
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setStartModalVisible(false)}>
                 <Text style={styles.buttonText}>ANULUJ</Text>
-              </Pressable>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -584,8 +587,13 @@ export default function Main() {
       <Modal
         visible={isRefuelModalVisible}
         transparent={true}
-        animationType="none"
-        onRequestClose={() => setRefuelModalVisible(false)}>
+        animationType="fade"
+        onRequestClose={() => {
+          setPickupModalVisible(false);
+          setPickupCount('');
+          setPickupWeight('');
+          setPickupComment('');
+        }}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>TANKOWANIE</Text>
@@ -634,16 +642,22 @@ export default function Main() {
               </View>
             </View>
             <View style={styles.modalButtons}>
-              <Pressable
+              <TouchableOpacity
                 style={[styles.modalButton, styles.saveButton]}
                 onPress={() => confirmRefuelClick()}>
                 <Text style={styles.buttonText}>AKCEPTUJ</Text>
-              </Pressable>
-              <Pressable
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setRefuelModalVisible(false)}>
+                onPress={() => {
+                  setRefuelModalVisible(false);
+                  setRefuelCount('');
+                  setRefuelCurrency('');
+                  setRefuelTotal('');
+                  setRefuelType('');
+                }}>
                 <Text style={styles.buttonText}>ANULUJ</Text>
-              </Pressable>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -652,8 +666,13 @@ export default function Main() {
       <Modal
         visible={isPickupModalVisible}
         transparent={true}
-        animationType="none"
-        onRequestClose={() => setPickupModalVisible(false)}>
+        animationType="fade"
+        onRequestClose={() => {
+          setPickupModalVisible(false);
+          setPickupCount('');
+          setPickupWeight('');
+          setPickupComment('');
+        }}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>ZAŁADUNEK</Text>
@@ -699,16 +718,21 @@ export default function Main() {
               </View>
             </View>
             <View style={styles.modalButtons}>
-              <Pressable
+              <TouchableOpacity
                 style={[styles.modalButton, styles.saveButton]}
                 onPress={() => confirmPickupClick()}>
                 <Text style={styles.buttonText}>AKCEPTUJ</Text>
-              </Pressable>
-              <Pressable
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setPickupModalVisible(false)}>
+                onPress={() => {
+                  setPickupModalVisible(false);
+                  setPickupCount('');
+                  setPickupWeight('');
+                  setPickupComment('');
+                }}>
                 <Text style={styles.buttonText}>ANULUJ</Text>
-              </Pressable>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -717,16 +741,16 @@ export default function Main() {
       <Modal
         visible={isBorderModalVisible}
         transparent={true}
-        animationType="none"
+        animationType="fade"
         onRequestClose={() => setBorderModalVisible(false)}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>GRANICA</Text>
-            <Pressable
+            <TouchableOpacity
               style={[styles.borderCancelButton]}
               onPress={() => setBorderModalVisible(false)}>
               <Text style={styles.buttonText}>X</Text>
-            </Pressable>
+            </TouchableOpacity>
             <FlatList
               data={borders}
               renderItem={renderBorderEventItem}
@@ -741,7 +765,7 @@ export default function Main() {
       <Modal
         visible={isFinishModalVisible}
         transparent={true}
-        animationType="none"
+        animationType="fade"
         onRequestClose={() => setFinishModalVisible(false)}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -758,16 +782,16 @@ export default function Main() {
               </Text>
             </View>
             <View style={styles.modalButtons}>
-              <Pressable
+              <TouchableOpacity
                 style={[styles.modalButton, styles.saveButton]}
                 onPress={() => finishRoute()}>
                 <Text style={styles.buttonText}>AKCEPTUJ</Text>
-              </Pressable>
-              <Pressable
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setFinishModalVisible(false)}>
                 <Text style={styles.buttonText}>ANULUJ</Text>
-              </Pressable>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -777,7 +801,7 @@ export default function Main() {
       <Modal
         visible={isLoadingModalVisible}
         transparent={true}
-        animationType="none">
+        animationType="fade">
         <View style={styles.modalContainer}>
           <View
             style={{

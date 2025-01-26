@@ -7,7 +7,6 @@ import {
   TextInput,
   Modal,
   Alert,
-  Pressable,
   Dimensions,
   Animated,
   Easing,
@@ -79,7 +78,12 @@ export default function SettingsPage() {
     if (result === true) {
       setLoadingModalVisible(false);
       Alert.alert('', 'Użytkownik został usunięty.\nZostniesz wylogowany.', [
-        {onPress: () => Logout()},
+        {
+          onPress: async () => {
+            await AsyncStorage.setItem('token', '');
+            navigation.reset({index: 0, routes: [{name: 'Login'}]});
+          },
+        },
       ]);
     } else setLoadingModalError(false);
   };
@@ -88,19 +92,14 @@ export default function SettingsPage() {
     setLoadingModalVisible(false);
   };
 
-  async function Logout() {
-    await AsyncStorage.setItem('token', '');
-    navigation.replace('Login');
-  }
-
   return (
     <View style={styles.container}>
       <View style={styles.menuContainer}>
-        <Pressable
+        <TouchableOpacity
           style={{...styles.menuButton, marginRight: 10}}
           onPress={() => navigation.navigate('Menu')}>
           <Text style={styles.menuButtonText}>↲ POWRÓT</Text>
-        </Pressable>
+        </TouchableOpacity>
         <View
           style={{...styles.menuButton, backgroundColor: 'transparent'}}></View>
       </View>
@@ -112,7 +111,7 @@ export default function SettingsPage() {
           />
           <TextInput
             style={styles.input}
-            placeholder="Hasło"
+            placeholder="HASŁO"
             placeholderTextColor="#B0B0B0"
             secureTextEntry
             value={password}
@@ -126,7 +125,7 @@ export default function SettingsPage() {
           />
           <TextInput
             style={styles.input}
-            placeholder="Powtórz hasło"
+            placeholder="POWTÓRZ HASŁO"
             placeholderTextColor="#B0B0B0"
             secureTextEntry
             value={confirmPassword}
@@ -150,7 +149,7 @@ export default function SettingsPage() {
       <Modal
         visible={isDeleteModalVisible}
         transparent={true}
-        animationType="none"
+        animationType="fade"
         onRequestClose={() => setDeleteModalVisible(false)}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -167,16 +166,16 @@ export default function SettingsPage() {
               </Text>
             </View>
             <View style={styles.modalButtons}>
-              <Pressable
+              <TouchableOpacity
                 style={[styles.modalButton, styles.saveButton]}
                 onPress={() => handleDeleteUser()}>
                 <Text style={styles.buttonText}>AKCEPTUJ</Text>
-              </Pressable>
-              <Pressable
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setDeleteModalVisible(false)}>
                 <Text style={styles.buttonText}>ANULUJ</Text>
-              </Pressable>
+              </TouchableOpacity>
             </View>
           </View>
         </View>

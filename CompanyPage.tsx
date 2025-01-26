@@ -8,7 +8,6 @@ import {
   TextInput,
   Modal,
   Alert,
-  Pressable,
   Dimensions,
   Animated,
   Easing,
@@ -111,11 +110,11 @@ export default function CompanyPage() {
         </Text>
       </View>
       <View style={styles.removeButtonSection}>
-        <Pressable
+        <TouchableOpacity
           style={styles.removeIcon}
           onPress={() => handleRemoveCompany(item.id)}>
           <Text style={styles.removeIconText}>USUŃ</Text>
-        </Pressable>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -123,16 +122,16 @@ export default function CompanyPage() {
   return (
     <View style={styles.container}>
       <View style={styles.menuContainer}>
-        <Pressable
+        <TouchableOpacity
           style={{...styles.menuButton, marginRight: 10}}
           onPress={() => navigation.navigate('Menu')}>
           <Text style={styles.menuButtonText}>↲ POWRÓT</Text>
-        </Pressable>
-        <Pressable
+        </TouchableOpacity>
+        <TouchableOpacity
           style={{...styles.menuButton, backgroundColor: '#0f3877'}}
           onPress={() => handleAddCompany()}>
           <Text style={styles.menuButtonText}>DODAJ FIRMĘ</Text>
-        </Pressable>
+        </TouchableOpacity>
       </View>
       {companies !== undefined && (
         <FlatList
@@ -156,7 +155,7 @@ export default function CompanyPage() {
       <Modal
         visible={isCreateModalVisible}
         transparent={true}
-        animationType="none"
+        animationType="fade"
         onRequestClose={() => setCreateModalVisible(false)}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -184,16 +183,16 @@ export default function CompanyPage() {
               </View>
             </View>
             <View style={styles.modalButtons}>
-              <Pressable
+              <TouchableOpacity
                 style={[styles.modalButton, styles.saveButton]}
                 onPress={confirmAddCompany}>
                 <Text style={styles.buttonText}>DODAJ</Text>
-              </Pressable>
-              <Pressable
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => setCreateModalVisible(false)}>
                 <Text style={styles.buttonText}>ANULUJ</Text>
-              </Pressable>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -202,7 +201,7 @@ export default function CompanyPage() {
       <Modal
         visible={isLoadingModalVisible}
         transparent={true}
-        animationType="none">
+        animationType="fade">
         <View style={styles.modalContainer}>
           <View
             style={{

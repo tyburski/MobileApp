@@ -1,7 +1,7 @@
 import React from 'react';
 import GeolocationPermission from './GeolocationPermission.tsx';
 import {ValidateUser} from './Dispatcher.tsx';
-import {Text, SafeAreaView} from 'react-native';
+import {Text, SafeAreaView, Animated, Easing} from 'react-native';
 import Login from './LoginPage.tsx';
 import Main from './MainPage.tsx';
 import Menu from './MenuPage.tsx';
@@ -20,6 +20,20 @@ function App() {
   const [initialRoute, setInitialRoute] = useState<
     keyof RootStackParamList | undefined
   >(undefined);
+  const spinValue = new Animated.Value(0);
+
+  const spin = spinValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+  Animated.loop(
+    Animated.timing(spinValue, {
+      toValue: 1,
+      duration: 1000,
+      easing: Easing.linear,
+      useNativeDriver: true,
+    }),
+  ).start();
 
   useEffect(() => {
     const checkPermissionsAndValidate = async () => {
@@ -43,8 +57,18 @@ function App() {
           justifyContent: 'center',
           alignContent: 'center',
           alignItems: 'center',
+          backgroundColor: 'white',
         }}>
-        <Text style={{fontSize: 20, textAlign: 'center'}}>Ładowanie...</Text>
+        <Animated.Image
+          source={require('./assets/icons/loading.png')}
+          style={{
+            backgroundColor: 'transparent',
+            resizeMode: 'contain',
+            alignSelf: 'center',
+            height: 100,
+            width: 100,
+            transform: [{rotate: spin}],
+          }}></Animated.Image>
       </SafeAreaView>
     );
   }

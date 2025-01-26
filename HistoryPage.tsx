@@ -7,7 +7,6 @@ import {
   FlatList,
   Modal,
   Alert,
-  Pressable,
   Dimensions,
   Animated,
   Easing,
@@ -143,16 +142,16 @@ export default function HistoryPage() {
             justifyContent: 'space-between',
             marginTop: 10,
           }}>
-          <Pressable
+          <TouchableOpacity
             style={[styles.pressable, {flex: 1, marginHorizontal: 10}]}
             onPress={() => handleSendUser(item.id)}>
             <Text style={styles.pressableText}>WYŚLIJ DO SIEBIE</Text>
-          </Pressable>
-          <Pressable
+          </TouchableOpacity>
+          <TouchableOpacity
             style={[styles.pressable, {flex: 1, marginHorizontal: 10}]}
             onPress={() => handleSendCompany(item.id)}>
             <Text style={styles.pressableText}>WYŚLIJ DO FIRMY</Text>
-          </Pressable>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -161,15 +160,15 @@ export default function HistoryPage() {
   return (
     <View style={styles.container}>
       <View style={styles.menuContainer}>
-        <Pressable
+        <TouchableOpacity
           style={{...styles.menuButton, marginRight: 10}}
           onPress={() => navigation.navigate('Menu')}>
           <Text style={styles.menuButtonText}>↲ POWRÓT</Text>
-        </Pressable>
+        </TouchableOpacity>
         <View
           style={{...styles.menuButton, backgroundColor: 'transparent'}}></View>
       </View>
-      {routes !== undefined && (
+      {routes !== undefined && routes.length > 0 && (
         <FlatList
           data={routes}
           renderItem={renderVehicleItem}
@@ -177,19 +176,20 @@ export default function HistoryPage() {
           contentContainerStyle={styles.itemList}
         />
       )}
-      {routes === undefined && (
-        <View style={styles.emptyListContainer}>
-          <Text style={styles.emptyListText}>
-            Wygląda na to, że nic tu nie ma!
-          </Text>
-        </View>
-      )}
+      {routes === undefined ||
+        (routes.length === 0 && (
+          <View style={styles.emptyListContainer}>
+            <Text style={styles.emptyListText}>
+              Wygląda na to, że nic tu nie ma!
+            </Text>
+          </View>
+        ))}
 
       {/* Modal Loading*/}
       <Modal
         visible={isLoadingModalVisible}
         transparent={true}
-        animationType="none">
+        animationType="fade">
         <View style={styles.modalContainer}>
           <View
             style={{

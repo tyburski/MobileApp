@@ -1,8 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {jwtDecode} from 'jwt-decode';
-import {useNavigation} from '@react-navigation/native';
-import {RootStackParamList} from './types';
-import {StackNavigationProp} from '@react-navigation/stack';
 
 export async function ValidateUser() {
   const token = await AsyncStorage.getItem('token');

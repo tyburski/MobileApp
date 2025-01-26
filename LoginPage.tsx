@@ -312,7 +312,7 @@ export default function Login() {
       <Modal
         visible={isLoadingModalVisible}
         transparent={true}
-        animationType="none">
+        animationType="fade">
         <View style={styles.modalContainer}>
           <View
             style={{

@@ -5,7 +5,7 @@ import {
   StyleSheet,
   Dimensions,
   Image,
-  Pressable,
+  TouchableOpacity,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {RootStackParamList} from './types';
@@ -32,7 +32,7 @@ export default function Menu() {
 
   async function Logout() {
     await AsyncStorage.setItem('token', '');
-    navigation.replace('Login');
+    navigation.reset({index: 0, routes: [{name: 'Login'}]});
   }
 
   return (
@@ -51,39 +51,39 @@ export default function Menu() {
       </View>
       <View style={styles.tilesContainer}>
         <View style={styles.row}>
-          <Pressable
+          <TouchableOpacity
             style={styles.tileHorizontal}
             onPress={() => handleTilePress('Main')}>
             <Text style={styles.tileText}>TRASA</Text>
-          </Pressable>
+          </TouchableOpacity>
 
-          <Pressable
+          <TouchableOpacity
             style={styles.tileHorizontal}
             onPress={() => handleTilePress('History')}>
             <Text style={styles.tileText}>HISTORIA</Text>
-          </Pressable>
-          <Pressable
+          </TouchableOpacity>
+          <TouchableOpacity
             style={styles.tileHorizontal}
             onPress={() => handleTilePress('Companies')}>
             <Text style={styles.tileText}>FIRMY</Text>
-          </Pressable>
+          </TouchableOpacity>
 
-          <Pressable
+          <TouchableOpacity
             style={styles.tileHorizontal}
             onPress={() => handleTilePress('Vehicles')}>
             <Text style={styles.tileText}>POJAZDY</Text>
-          </Pressable>
-          <Pressable
+          </TouchableOpacity>
+          <TouchableOpacity
             style={styles.tileHorizontal}
             onPress={() => handleTilePress('Settings')}>
             <Text style={styles.tileText}>USTAWIENIA</Text>
-          </Pressable>
+          </TouchableOpacity>
 
-          <Pressable
+          <TouchableOpacity
             style={{...styles.tileHorizontal, backgroundColor: '#EE4E4E'}}
             onPress={() => Logout()}>
             <Text style={styles.tileText}>WYLOGUJ</Text>
-          </Pressable>
+          </TouchableOpacity>
         </View>
       </View>
     </View>
