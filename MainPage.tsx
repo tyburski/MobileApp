@@ -9,13 +9,12 @@ import {
   Easing,
   TextInput,
   Modal,
-  Button,
   TouchableOpacity,
   Dimensions,
   Alert,
 } from 'react-native';
 import {Picker} from '@react-native-picker/picker';
-import {useState, useRef} from 'react';
+import {useState} from 'react';
 import {useEffect} from 'react';
 import Geofencing from '@rn-bridge/react-native-geofencing';
 import {getNeighbors} from './borders';
@@ -31,6 +30,7 @@ import {
   pickupModel,
   refuelModel,
   startModel,
+  finishModel,
 } from './Interfaces.tsx';
 import {Currency} from './Dispatcher.tsx';
 import {useNavigation, useIsFocused} from '@react-navigation/native';
@@ -179,13 +179,20 @@ export default function Main() {
       getRoute();
     } else setLoadingModalError(true);
   };
+
   const finishRoute = async () => {
     setFinishModalVisible(false);
     if (route !== undefined) {
       setLoadingModalError(false);
       setLoadingModalVisible(true);
-      const id = route.id;
-      const response = await apiController.finishRoute(id);
+      const position = await Geofencing.getCurrentLocation();
+      const finish: finishModel = {
+        routeId: route.id,
+        latitude: position.latitude,
+        longitude: position.longitude,
+        country: position.isoCountryCode,
+      };
+      const response = await apiController.finishRoute(finish);
 
       if (response === true) {
         playSound();

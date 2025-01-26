@@ -1,5 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {Alert} from 'react-native';
 import {
   pickupModel,
   refuelModel,
@@ -7,6 +6,7 @@ import {
   dropModel,
   startModel,
   registerModel,
+  finishModel,
 } from './Interfaces.tsx';
 
 const setToken = async (token: string) => {
@@ -389,7 +389,7 @@ export async function newRoute(input: startModel) {
     if (controller.signal.aborted) return false;
   }
 }
-export async function finishRoute(input: number) {
+export async function finishRoute(input: finishModel) {
   const token = await AsyncStorage.getItem('token');
   const controller = new AbortController();
 
@@ -399,15 +399,24 @@ export async function finishRoute(input: number) {
   try {
     if (token) {
       const response = await fetch(
-        `http://192.168.0.101:27270/api/route/finish?routeId=${input}`,
+        `http://192.168.0.101:27270/api/route/finish`,
         {
           signal: controller.signal,
           method: 'POST',
           headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
             accessToken: token,
           },
+          body: JSON.stringify({
+            routeId: input.routeId,
+            latitude: input.latitude,
+            longitude: input.longitude,
+            country: input.country,
+          }),
         },
       );
+      console.log(response.status);
       if (response.ok) {
         return true;
       } else {
@@ -583,5 +592,63 @@ export async function getRoute() {
     } else return undefined;
   } catch {
     if (controller.signal.aborted) return undefined;
+  }
+}
+export async function getRoutes() {
+  const controller = new AbortController();
+  const token = await AsyncStorage.getItem('token');
+
+  setTimeout(() => {
+    controller.abort();
+  }, 3000);
+
+  try {
+    if (token) {
+      const headers = {accessToken: token};
+      const response = await fetch(
+        `http://192.168.0.101:27270/api/route/getAll`,
+        {
+          signal: controller.signal,
+          headers,
+        },
+      );
+      if (response.status === 200) {
+        const responseData = await response.json();
+        return responseData;
+      } else {
+        return undefined;
+      }
+    } else return undefined;
+  } catch {
+    if (controller.signal.aborted) return undefined;
+  }
+}
+export async function generateReport(id: number, forUser: boolean) {
+  const token = await AsyncStorage.getItem('token');
+  const controller = new AbortController();
+
+  setTimeout(() => {
+    controller.abort();
+  }, 3000);
+  try {
+    if (token) {
+      const response = await fetch(
+        `http://192.168.0.101:27270/api/report/generate?id=${id}&forUser=${forUser}`,
+        {
+          signal: controller.signal,
+          method: 'POST',
+          headers: {
+            accessToken: token,
+          },
+        },
+      );
+      if (response.ok) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  } catch {
+    if (controller.signal.aborted) return false;
   }
 }

@@ -1,12 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {jwtDecode} from 'jwt-decode';
-import {useState} from 'react';
 import {NavigationProp} from '@react-navigation/native';
 import {RootStackParamList} from './types';
 
 export async function ValidateUser() {
   const token = await AsyncStorage.getItem('token');
-  console.log('token: ' + token);
   if (token !== null && token !== '') {
     const decoded = jwtDecode(token);
     const currentTime = Date.now() / 1000;

@@ -12,7 +12,6 @@ async function GeolocationPermission() {
         buttonPositive: 'OK',
       },
     );
-    console.log('GeolocationPermission:', granted);
     if (granted === 'granted') {
       return true;
     } else {

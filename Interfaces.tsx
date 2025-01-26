@@ -22,7 +22,7 @@ export interface route {
   userId: number;
   companyId: number;
   vehicleId: number;
-  routeEvents: [];
+  routeEvents: routeEvent[];
   finished: boolean;
   currentCountry: string;
 }
@@ -52,6 +52,12 @@ export interface routeEvent {
 export interface startModel {
   vehicleId: number | undefined;
   companyId: number | undefined;
+  latitude: number;
+  longitude: number;
+  country: string;
+}
+export interface finishModel {
+  routeId: number | undefined;
   latitude: number;
   longitude: number;
   country: string;

@@ -14,7 +14,6 @@ import {
   Easing,
   Image,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Picker} from '@react-native-picker/picker';
 import {vehicle} from './Interfaces';
 import {createVehicle, removeVehicle, getVehicles} from './ApiController';
@@ -22,7 +21,7 @@ import {useNavigation, useIsFocused} from '@react-navigation/native';
 import {NavigationProp} from '@react-navigation/native';
 import {RootStackParamList} from './types';
 
-const {width, height} = Dimensions.get('window');
+const {width} = Dimensions.get('window');
 
 export default function VehiclePage() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -277,9 +276,8 @@ const styles = StyleSheet.create({
     height: 80,
     flexDirection: 'row',
     backgroundColor: 'transparent',
-    borderBottomLeftRadius: 25,
-    borderTopRightRadius: 25,
     padding: 10,
+    marginBottom: 5,
   },
   emptyListContainer: {
     flex: 1,
@@ -294,7 +292,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   vehicleList: {
-    padding: 5,
+    paddingHorizontal: 10,
   },
   vehicleCard: {
     flexDirection: 'row',

@@ -2,21 +2,18 @@ import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   Dimensions,
   Image,
   Pressable,
 } from 'react-native';
-import {useNavigation, useFocusEffect} from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 import {RootStackParamList} from './types';
 import {NavigationProp} from '@react-navigation/native';
 import {Logout} from './Dispatcher';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const {width, height} = Dimensions.get('window');
-const tileMargin = width * 0.02;
-let deviceWidth = Dimensions.get('window').width;
+const {width} = Dimensions.get('window');
 
 export default function Menu() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -58,7 +55,7 @@ export default function Menu() {
 
           <Pressable
             style={styles.tileHorizontal}
-            onPress={() => handleTilePress('HistoriaTras')}>
+            onPress={() => handleTilePress('History')}>
             <Text style={styles.tileText}>HISTORIA</Text>
           </Pressable>
           <Pressable

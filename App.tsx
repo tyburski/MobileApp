@@ -1,20 +1,14 @@
 import React from 'react';
 import GeolocationPermission from './GeolocationPermission.tsx';
 import {ValidateUser} from './Dispatcher.tsx';
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  Button,
-  SafeAreaView,
-} from 'react-native';
+import {Text, SafeAreaView} from 'react-native';
 import Login from './LoginPage.tsx';
 import Main from './MainPage.tsx';
 import Menu from './MenuPage.tsx';
 import Vehicle from './VehiclePage.tsx';
 import Company from './CompanyPage.tsx';
 import Settings from './SettingsPage.tsx';
+import History from './HistoryPage.tsx';
 import {useState, useEffect} from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
@@ -44,7 +38,7 @@ function App() {
   if (initialRoute === undefined) {
     return (
       <SafeAreaView>
-        <Text>Loading...</Text>
+        <Text style={{fontSize: 20}}>Ładowanie...</Text>
       </SafeAreaView>
     );
   }
@@ -64,6 +58,11 @@ function App() {
         <Stack.Screen
           name="Main"
           component={Main}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name="History"
+          component={History}
           options={{headerShown: false}}
         />
         <Stack.Screen

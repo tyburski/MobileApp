@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   FlatList,
-  TextInput,
   Modal,
   Alert,
   Pressable,
@@ -14,20 +13,18 @@ import {
   Easing,
   Image,
 } from 'react-native';
-import {company} from './Interfaces';
-import {createCompany, removeCompany, getCompanies} from './ApiController';
+import {route} from './Interfaces';
+import {getRoutes, generateReport} from './ApiController';
 import {useNavigation, useIsFocused} from '@react-navigation/native';
 import {NavigationProp} from '@react-navigation/native';
 import {RootStackParamList} from './types';
+import Moment from 'moment';
 
 const {width} = Dimensions.get('window');
 
-export default function CompanyPage() {
+export default function HistoryPage() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const [companies, setCompanies] = useState<company[] | undefined>();
-  const [isCreateModalVisible, setCreateModalVisible] = useState(false);
-  const [newCompanyName, setNewCompanyName] = useState('');
-  const [newCompanyEmail, setNewCompanyEmail] = useState('');
+  const [routes, setRoutes] = useState<route[] | undefined>();
   const [isLoadingModalVisible, setLoadingModalVisible] = useState(false);
   const [isLoadingModalError, setLoadingModalError] = useState(true);
 
@@ -45,80 +42,121 @@ export default function CompanyPage() {
     }),
   ).start();
 
-  const fetchCompanies = async () => {
+  const fetchRoutes = async () => {
     setLoadingModalError(false);
     setLoadingModalVisible(true);
-    const companies = await getCompanies();
+    const routes = await getRoutes();
     setLoadingModalVisible(false);
-    setCompanies(companies);
+    setRoutes(routes);
   };
 
   const isFocused = useIsFocused();
   useEffect(() => {
     if (isFocused) {
-      fetchCompanies();
+      fetchRoutes();
     }
   }, [isFocused]);
-
-  const handleAddCompany = () => {
-    setNewCompanyName('');
-    setNewCompanyEmail('');
-    setCreateModalVisible(true);
-  };
-
-  const confirmAddCompany = async () => {
-    if (!newCompanyName || !newCompanyEmail) {
-      Alert.alert('', 'Wszystkie pola są wymagane.');
-      return;
-    }
-    let reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w\w+)+$/;
-    if (reg.test(newCompanyEmail)) {
-      setCreateModalVisible(false);
-      setLoadingModalError(false);
-      setLoadingModalVisible(true);
-      const result = await createCompany(newCompanyName, newCompanyEmail);
-      if (result === true) {
-        fetchCompanies();
-      } else setLoadingModalError(true);
-    } else {
-      Alert.alert('', 'Nieprawidłowy adres e-mail.');
-    }
-  };
-
-  const handleRemoveCompany = async (companyId: number) => {
-    setLoadingModalError(false);
-    setLoadingModalVisible(true);
-    const result = await removeCompany(companyId);
-    if (result === true) {
-      fetchCompanies();
-    } else setLoadingModalError(false);
-  };
 
   const hanldeCloseLoadingModal = () => {
     setLoadingModalVisible(false);
   };
 
-  const renderVehicleItem = ({item}: {item: company}) => (
-    <View style={[styles.card]}>
-      <View style={styles.section}>
-        <Text style={styles.text}>
-          <Text style={styles.infoLabel}>NAZWA: </Text>
-          {item.name}
-        </Text>
-        <Text style={styles.text}>
-          <Text style={styles.infoLabel}>E-MAIL: </Text>
-          {item.email}
-        </Text>
+  const handleSendUser = async (id: number) => {
+    setLoadingModalError(false);
+    setLoadingModalVisible(true);
+    const result = await generateReport(id, true);
+    if (result === true) {
+      setLoadingModalVisible(false);
+      Alert.alert('', 'Raport został wysłany.');
+    } else setLoadingModalError(true);
+  };
+  const handleSendCompany = async (id: number) => {
+    setLoadingModalError(false);
+    setLoadingModalVisible(true);
+    const result = await generateReport(id, false);
+    if (result === true) {
+      setLoadingModalVisible(false);
+      Alert.alert('', 'Raport został wysłany.');
+    } else setLoadingModalError(true);
+  };
+
+  const calculateDateDifference = (
+    startDateString?: string,
+    endDateString?: string,
+  ) => {
+    if (!startDateString || !endDateString) {
+      return {days: 0, hours: 0};
+    }
+
+    const startDate = new Date(startDateString);
+    const endDate = new Date(endDateString);
+
+    const differenceMs = endDate.getTime() - startDate.getTime();
+
+    const days = Math.floor(differenceMs / (1000 * 60 * 60 * 24));
+    const hours = Math.floor(
+      (differenceMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+    );
+
+    return {days, hours};
+  };
+
+  const renderVehicleItem = ({item}: {item: route}) => {
+    const {days, hours} = calculateDateDifference(
+      item.routeEvents?.[0]?.date.toString(),
+      item.routeEvents?.[item.routeEvents.length - 1]?.date.toString(),
+    );
+
+    return (
+      <View style={[styles.itemCard]}>
+        <View
+          style={{
+            flexDirection: 'row',
+            paddingHorizontal: 0,
+            justifyContent: 'space-between',
+            width: '100%',
+          }}>
+          <View style={{flex: 1}}>
+            <Text style={styles.itemLabel}>TRASA</Text>
+            <Text style={styles.itemText}>
+              {days}d {hours}h
+            </Text>
+          </View>
+
+          <View style={{flex: 1, alignItems: 'flex-end'}}>
+            <Text style={{...styles.itemText, textAlign: 'right'}}>
+              <Text style={styles.itemLabel}>Od </Text>
+              {Moment(item.routeEvents?.[0]?.date).format('DD.MM.YYYY hh:mm')}
+            </Text>
+            <Text style={{...styles.itemText, textAlign: 'right'}}>
+              <Text style={styles.itemLabel}>Do </Text>
+              {Moment(
+                item.routeEvents?.[item.routeEvents.length - 1]?.date,
+              ).format('DD.MM.YYYY hh:mm')}
+            </Text>
+          </View>
+        </View>
+
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            marginTop: 10,
+          }}>
+          <Pressable
+            style={[styles.pressable, {flex: 1, marginHorizontal: 10}]}
+            onPress={() => handleSendUser(item.id)}>
+            <Text style={styles.pressableText}>WYŚLIJ DO SIEBIE</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.pressable, {flex: 1, marginHorizontal: 10}]}
+            onPress={() => handleSendCompany(item.id)}>
+            <Text style={styles.pressableText}>WYŚLIJ DO FIRMY</Text>
+          </Pressable>
+        </View>
       </View>
-      <View style={styles.removeButtonSection}>
-        <Pressable
-          style={styles.removeIcon}
-          onPress={() => handleRemoveCompany(item.id)}>
-          <Text style={styles.removeIconText}>USUŃ</Text>
-        </Pressable>
-      </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -128,76 +166,25 @@ export default function CompanyPage() {
           onPress={() => navigation.navigate('Menu')}>
           <Text style={styles.menuButtonText}>↲ POWRÓT</Text>
         </Pressable>
-        <Pressable
-          style={{...styles.menuButton, backgroundColor: '#0f3877'}}
-          onPress={() => handleAddCompany()}>
-          <Text style={styles.menuButtonText}>DODAJ FIRMĘ</Text>
-        </Pressable>
+        <View
+          style={{...styles.menuButton, backgroundColor: 'transparent'}}></View>
       </View>
-      {companies !== undefined && (
+      {routes !== undefined && (
         <FlatList
-          data={companies}
+          data={routes}
           renderItem={renderVehicleItem}
           keyExtractor={item => item.id.toString()}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={styles.itemList}
         />
       )}
-      {companies === undefined && (
+      {routes === undefined && (
         <View style={styles.emptyListContainer}>
           <Text style={styles.emptyListText}>
             Wygląda na to, że nic tu nie ma!
           </Text>
-          <Text style={styles.emptyListText}>
-            Kliknij przycisk na górze, aby dodać firmę.
-          </Text>
         </View>
       )}
 
-      <Modal
-        visible={isCreateModalVisible}
-        transparent={true}
-        animationType="none"
-        onRequestClose={() => setCreateModalVisible(false)}>
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>DODAJ NOWĄ FIRMĘ</Text>
-
-            <View style={styles.pickerContainer}>
-              <View style={styles.inputWrapper}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="NAZWA FIRMY"
-                  placeholderTextColor="#B0B0B0"
-                  keyboardType="email-address"
-                  value={newCompanyName}
-                  onChangeText={setNewCompanyName}
-                />
-              </View>
-              <View style={styles.inputWrapper}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="E-MAIL FIRMY"
-                  placeholderTextColor="#B0B0B0"
-                  value={newCompanyEmail}
-                  onChangeText={setNewCompanyEmail}
-                />
-              </View>
-            </View>
-            <View style={styles.modalButtons}>
-              <Pressable
-                style={[styles.modalButton, styles.saveButton]}
-                onPress={confirmAddCompany}>
-                <Text style={styles.buttonText}>DODAJ</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setCreateModalVisible(false)}>
-                <Text style={styles.buttonText}>ANULUJ</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
       {/* Modal Loading*/}
       <Modal
         visible={isLoadingModalVisible}
@@ -274,14 +261,27 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5EDED',
-    padding: 5,
   },
   menuContainer: {
-    height: 80,
+    height: 60,
     flexDirection: 'row',
     backgroundColor: 'transparent',
-    padding: 10,
-    marginBottom: 5,
+    margin: 15,
+  },
+  icon: {
+    width: 30,
+    height: 30,
+    resizeMode: 'contain',
+    marginRight: 10,
+  },
+  button: {
+    width: '100%',
+    height: 60,
+    marginTop: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#0f3877',
+    borderRadius: 25,
   },
   emptyListContainer: {
     flex: 1,
@@ -295,11 +295,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
   },
-  list: {
-    paddingHorizontal: 10,
+  itemList: {
+    paddingHorizontal: 15,
   },
-  card: {
-    flexDirection: 'row',
+  itemCard: {
     backgroundColor: 'transparent',
     justifyContent: 'center',
     padding: 10,
@@ -309,36 +308,34 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginBottom: 20,
   },
-  section: {
+  itemSection: {
     flex: 3,
     backgroundColor: 'transparent',
   },
-  text: {
+  itemText: {
     flexDirection: 'column',
     color: 'black',
     fontSize: 20,
     fontFamily: 'RobotoCondensed-Light',
-    textAlign: 'left',
   },
   removeButtonSection: {
     flex: 1,
     padding: 5,
   },
-  infoLabel: {
+  itemLabel: {
     color: 'black',
     fontSize: 20,
     fontFamily: 'RobotoCondensed-Regular',
-    textAlign: 'left',
   },
-  removeIcon: {
+  pressable: {
     flex: 1,
-    backgroundColor: '#EE4E4E',
+    backgroundColor: '#938b8b',
     borderRadius: 25,
     height: 30,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  removeIconText: {
+  pressableText: {
     color: '#FFFFFF',
     fontSize: 15,
     fontFamily: 'RobotoCondensed-Regular',
@@ -386,6 +383,7 @@ const styles = StyleSheet.create({
     textAlign: 'left',
   },
   inputWrapper: {
+    flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F5EDED',
     borderColor: '#0f3877',

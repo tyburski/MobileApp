@@ -36,6 +36,8 @@ export default function Login() {
   const [isLoadingModalError, setLoadingModalError] = useState(false);
   const spinValue = new Animated.Value(0);
 
+  let reg = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w\w+)+$/;
+
   const spin = spinValue.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
@@ -97,57 +99,69 @@ export default function Login() {
       Alert.alert('', 'Wszystkie pola muszą być wypełnione.');
       return;
     }
-    setLoadingModalError(false);
-    setLoadingModalVisible(true);
-    const success = await login(email, password);
-    console.log(success);
-    if (success) {
-      const user = await getUser();
-      if (user !== null) {
-        await AsyncStorage.setItem(
-          'userName',
-          `${user.firstName} ${user.lastName}`,
-        );
-        setEmail('');
-        setPassword('');
-        setTimeout(() => {
+    if (reg.test(email) === true) {
+      setLoadingModalError(false);
+      setLoadingModalVisible(true);
+      const success = await login(email, password);
+      console.log(success);
+      if (success) {
+        const user = await getUser();
+        if (user !== null) {
+          await AsyncStorage.setItem(
+            'userName',
+            `${user.firstName} ${user.lastName}`,
+          );
+          setEmail('');
+          setPassword('');
+          setTimeout(() => {
+            setLoadingModalVisible(false);
+          }, 2000);
           setLoadingModalVisible(false);
-        }, 2000);
-        setLoadingModalVisible(false);
-        navigation.replace('Menu');
+          navigation.replace('Menu');
+        } else setLoadingModalError(true);
       } else setLoadingModalError(true);
-    } else setLoadingModalError(true);
+    } else {
+      Alert.alert('', 'Nieprawidłowy adres e-mail.');
+    }
   };
 
   const handleRegisterClick = async () => {
     if (name && surname && email && password && confirmPassword) {
-      if (password === confirmPassword) {
-        setLoadingModalError(false);
-        setLoadingModalVisible(true);
-        const model: registerModel = {
-          emailAddress: email,
-          password: password,
-          firstName: name,
-          lastName: surname,
-        };
-        const response = await register(model);
-        if (response === true) {
-          setLoadingModalVisible(false);
-          Alert.alert('', 'Konto zostało utworzone.\nZostaniesz zalogowany.', [
-            {
-              onPress: () => {
-                handleLoginClick();
-              },
-            },
-          ]);
-          setEmail('');
-          setPassword('');
-          setConfirmPassword('');
-          setName('');
-          setSurname('');
-        } else setLoadingModalError(true);
+      if (reg.test(email) === true) {
+        if (password === confirmPassword) {
+          setLoadingModalError(false);
+          setLoadingModalVisible(true);
+          const model: registerModel = {
+            emailAddress: email,
+            password: password,
+            firstName: name,
+            lastName: surname,
+          };
+          const response = await register(model);
+          if (response === true) {
+            setLoadingModalVisible(false);
+            Alert.alert(
+              '',
+              'Konto zostało utworzone.\nZostaniesz zalogowany.',
+              [
+                {
+                  onPress: () => {
+                    handleLoginClick();
+                  },
+                },
+              ],
+            );
+            setEmail('');
+            setPassword('');
+            setConfirmPassword('');
+            setName('');
+            setSurname('');
+          } else setLoadingModalError(true);
+        } else {
+          Alert.alert('', 'Wprowadzone hasła nie są takie same.');
+        }
       } else {
-        Alert.alert('', 'Wprowadzone hasła nie są takie same.');
+        Alert.alert('', 'Nieprawidłowy adres e-mail.');
       }
     } else {
       Alert.alert('', 'Wszystkie pola muszą być wypełnione.');

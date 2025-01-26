@@ -1,10 +1,9 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
-  FlatList,
   TextInput,
   Modal,
   Alert,
@@ -14,11 +13,8 @@ import {
   Easing,
   Image,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {Picker} from '@react-native-picker/picker';
-import {vehicle} from './Interfaces';
 import {changePassword, deleteUser} from './ApiController';
-import {useNavigation, useIsFocused} from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 import {NavigationProp} from '@react-navigation/native';
 import {RootStackParamList} from './types';
 import {Logout} from './Dispatcher';
@@ -265,7 +261,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderBottomLeftRadius: 25,
     borderTopRightRadius: 25,
-    margin: 20,
+    margin: 15,
   },
   changePasswordContainer: {
     flex: 1,
