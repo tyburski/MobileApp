@@ -9,14 +9,13 @@ import {
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {RootStackParamList} from './types';
-import {NavigationProp} from '@react-navigation/native';
-import {Logout} from './Dispatcher';
+import {StackNavigationProp} from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const {width} = Dimensions.get('window');
 
 export default function Menu() {
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [userName, setUsername] = useState('');
 
   useEffect(() => {
@@ -28,8 +27,13 @@ export default function Menu() {
   };
 
   const handleTilePress = (route: keyof RootStackParamList) => {
-    navigation.navigate(route);
+    navigation.push(route);
   };
+
+  async function Logout() {
+    await AsyncStorage.setItem('token', '');
+    navigation.replace('Login');
+  }
 
   return (
     <View style={styles.container}>
@@ -77,7 +81,7 @@ export default function Menu() {
 
           <Pressable
             style={{...styles.tileHorizontal, backgroundColor: '#EE4E4E'}}
-            onPress={() => Logout(navigation)}>
+            onPress={() => Logout()}>
             <Text style={styles.tileText}>WYLOGUJ</Text>
           </Pressable>
         </View>

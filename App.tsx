@@ -37,8 +37,14 @@ function App() {
 
   if (initialRoute === undefined) {
     return (
-      <SafeAreaView>
-        <Text style={{fontSize: 20}}>Ładowanie...</Text>
+      <SafeAreaView
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignContent: 'center',
+          alignItems: 'center',
+        }}>
+        <Text style={{fontSize: 20, textAlign: 'center'}}>Ładowanie...</Text>
       </SafeAreaView>
     );
   }

@@ -245,7 +245,6 @@ export async function getVehicles() {
       );
       if (response.status === 200) {
         const responseData = await response.json();
-        console.log(responseData);
         return responseData;
       } else {
         return undefined;
@@ -416,7 +415,6 @@ export async function finishRoute(input: finishModel) {
           }),
         },
       );
-      console.log(response.status);
       if (response.ok) {
         return true;
       } else {

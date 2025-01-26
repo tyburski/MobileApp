@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {jwtDecode} from 'jwt-decode';
-import {NavigationProp} from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 import {RootStackParamList} from './types';
+import {StackNavigationProp} from '@react-navigation/stack';
 
 export async function ValidateUser() {
   const token = await AsyncStorage.getItem('token');
@@ -15,11 +16,6 @@ export async function ValidateUser() {
   } else {
     return false;
   }
-}
-
-export async function Logout(navigation: NavigationProp<RootStackParamList>) {
-  await AsyncStorage.setItem('token', '');
-  navigation.navigate('Login');
 }
 
 export function Currency(input: string | null) {

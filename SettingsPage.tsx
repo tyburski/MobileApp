@@ -15,15 +15,14 @@ import {
 } from 'react-native';
 import {changePassword, deleteUser} from './ApiController';
 import {useNavigation} from '@react-navigation/native';
-import {NavigationProp} from '@react-navigation/native';
 import {RootStackParamList} from './types';
-import {Logout} from './Dispatcher';
+import {StackNavigationProp} from '@react-navigation/stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const {width, height} = Dimensions.get('window');
+const {width} = Dimensions.get('window');
 
 export default function SettingsPage() {
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const [newRegistrationNumber, setNewRegistrationNumber] = useState('');
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoadingModalVisible, setLoadingModalVisible] = useState(false);
@@ -80,7 +79,7 @@ export default function SettingsPage() {
     if (result === true) {
       setLoadingModalVisible(false);
       Alert.alert('', 'Użytkownik został usunięty.\nZostniesz wylogowany.', [
-        {onPress: () => Logout(navigation)},
+        {onPress: () => Logout()},
       ]);
     } else setLoadingModalError(false);
   };
@@ -88,6 +87,11 @@ export default function SettingsPage() {
   const hanldeCloseLoadingModal = () => {
     setLoadingModalVisible(false);
   };
+
+  async function Logout() {
+    await AsyncStorage.setItem('token', '');
+    navigation.replace('Login');
+  }
 
   return (
     <View style={styles.container}>

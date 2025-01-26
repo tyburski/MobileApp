@@ -203,8 +203,6 @@ export default function Main() {
   const handleStartClick = async () => {
     const v = await getvehicles();
     const c = await getcompanies();
-    console.log(vehicles.length);
-    console.log(companies.length);
     if (v === true && c === true) {
       setStartModalVisible(true);
     } else Alert.alert('', 'Najpierw utwórz firmę i pojazd');

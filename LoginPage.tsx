@@ -103,7 +103,6 @@ export default function Login() {
       setLoadingModalError(false);
       setLoadingModalVisible(true);
       const success = await login(email, password);
-      console.log(success);
       if (success) {
         const user = await getUser();
         if (user !== null) {
